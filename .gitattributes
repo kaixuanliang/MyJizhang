@@ -1,0 +1,13 @@
+* text=auto
+
+# 脚本行尾：shell 必须 LF，Windows 批处理必须 CRLF
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# 二进制
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.keystore binary

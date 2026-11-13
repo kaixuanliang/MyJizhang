@@ -1,0 +1,8 @@
+<!-- 花呗：蓝底白色花瓣旋标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#1677FF" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M78,54 A24,24 0 1,1 46,31" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,54m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0" />
+</vector>

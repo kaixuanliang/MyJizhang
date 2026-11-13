@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_bg">
+
+    <!-- 标题行：26年11月账单 ▼  |  🔍  账本名 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <TextView
+            android:id="@+id/text_month_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/btn_search"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="🔍"
+            android:textSize="16sp"
+            android:contentDescription="搜索" />
+
+        <TextView
+            android:id="@+id/text_book_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- 蓝色渐变月度总览卡 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_asset_header"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="16dp">
+
+            <TextView
+                android:id="@+id/text_overview_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="11月支出"
+                android:textSize="13sp"
+                android:textColor="#DDEFFF" />
+
+            <TextView
+                android:id="@+id/text_overview_amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="2dp"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:orientation="vertical" android:gravity="center">
+                    <TextView android:id="@+id/text_income_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="12sp" android:textColor="#DDEFFF" />
+                    <TextView android:id="@+id/text_income_amount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp" android:textSize="15sp"
+                        android:textStyle="bold" android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:orientation="vertical" android:gravity="center">
+                    <TextView android:id="@+id/text_balance_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="12sp" android:textColor="#DDEFFF" />
+                    <TextView android:id="@+id/text_balance_amount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp" android:textSize="15sp"
+                        android:textStyle="bold" android:textColor="#FFFFFF" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 左右箭头切月（覆盖在卡片两侧） -->
+        <TextView
+            android:id="@+id/btn_prev"
+            android:layout_width="52dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|center_vertical"
+            android:gravity="center"
+            android:text="‹"
+            android:textSize="30sp"
+            android:textColor="#E6FFFFFF"
+            android:contentDescription="上一月" />
+
+        <TextView
+            android:id="@+id/btn_next"
+            android:layout_width="52dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end|center_vertical"
+            android:gravity="center"
+            android:text="›"
+            android:textSize="30sp"
+            android:textColor="#E6FFFFFF"
+            android:contentDescription="下一月" />
+    </FrameLayout>
+
+    <!-- 快捷记账：+支出 / +收入 / +转账 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_card"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="10dp"
+        android:paddingVertical="12dp">
+
+        <LinearLayout
+            android:id="@+id/btn_quick_pay"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/expense_red" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="支出"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_quick_income"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/income_green" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="收入"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_quick_transfer"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/transfer_blue" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="转账"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_bills"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="4dp"
+        android:background="@color/page_bg"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp" />
+</LinearLayout>

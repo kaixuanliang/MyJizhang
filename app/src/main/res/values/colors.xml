@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#185FA5</color>
+    <color name="primary_dark">#0C447C</color>
+    <color name="primary_light">#E6F1FB</color>
+    <color name="expense_red">#E24B4A</color>
+    <color name="income_green">#35A16D</color>
+    <color name="transfer_blue">#378ADD</color>
+    <color name="text_primary">#26262B</color>
+    <color name="text_secondary">#888780</color>
+    <color name="divider">#E5E5EA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="page_bg">#F5F6F8</color>
+    <color name="blue_select">#D3E3F5</color>
+    <color name="blue_tint">#EDF4FB</color>
+    <color name="launcher_bg">#185FA5</color>
+</resources>

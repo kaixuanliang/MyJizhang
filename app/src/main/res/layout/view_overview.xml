@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginTop="4dp"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="14dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="收支总览"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary" />
+
+    <!-- 支出 | 收入 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="支出" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_pay" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/expense_red" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="收入" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_income" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/income_green" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 结余 | 日均支出 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="结余" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_balance" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="日均支出" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_daily" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/text_primary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 转账 | 手续费 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="转账" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_transfer" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/transfer_blue" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="vertical" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="手续费" android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/ov_fee" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
+                android:textStyle="bold" android:textColor="@color/text_primary" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

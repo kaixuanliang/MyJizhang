@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="仓库（格式 owner/repo）"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+        <EditText
+            android:id="@+id/input_repo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="myname/my-backup-repo"
+            android:inputType="text"
+            android:singleLine="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="分支"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+        <EditText
+            android:id="@+id/input_branch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="main"
+            android:inputType="text"
+            android:singleLine="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Personal Access Token（需要该仓库 Contents 读写权限）"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+        <EditText
+            android:id="@+id/input_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="github_pat_…"
+            android:inputType="textPassword"
+            android:singleLine="true" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switch_encrypt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="加密上传（AES-256，仓库里只有密文）" />
+
+        <EditText
+            android:id="@+id/input_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="加密密码（恢复时需输入同一密码）"
+            android:inputType="textPassword"
+            android:singleLine="true"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <Button
+                android:id="@+id/btn_test"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="测试连接" />
+
+            <Button
+                android:id="@+id/btn_upload"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="上传备份" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_restore"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="从仓库恢复（覆盖本地）" />
+
+        <TextView
+            android:id="@+id/text_sync_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+    </LinearLayout>
+</ScrollView>

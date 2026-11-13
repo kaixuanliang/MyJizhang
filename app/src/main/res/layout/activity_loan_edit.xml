@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_bg">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/page_bg"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- 卡1：对方姓名（蓝色标签 + 输入线） -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
+
+                <TextView
+                    android:id="@+id/label_person"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="你借钱给谁"
+                    android:textSize="12sp"
+                    android:textColor="@color/transfer_blue" />
+
+                <EditText
+                    android:id="@+id/input_person"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="@null"
+                    android:inputType="text"
+                    android:textSize="17sp"
+                    android:textColor="@color/text_primary" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@color/transfer_blue" />
+            </LinearLayout>
+
+            <!-- 卡2：金额 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="16dp">
+
+                <EditText
+                    android:id="@+id/input_amount"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:background="@null"
+                    android:hint="借出金额"
+                    android:inputType="numberDecimal"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
+
+            <!-- 卡3：备注 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="16dp">
+
+                <EditText
+                    android:id="@+id/input_remark"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:background="@null"
+                    android:hint="备注"
+                    android:inputType="text"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
+
+            <!-- 卡4：借款日期 / 还款日期 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:id="@+id/row_borrow_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <TextView
+                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:text="借款日期" android:textSize="15sp" android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_borrow_date"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textSize="15sp" android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="@color/divider" />
+
+                <LinearLayout
+                    android:id="@+id/row_repay_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <TextView
+                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:text="还款日期" android:textSize="15sp" android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_repay_date"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="选填" android:textSize="15sp" android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡5：账户 / 借据照片 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card">
+
+                <LinearLayout
+                    android:id="@+id/row_asset"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="10dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/label_asset"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="借出账户" android:textSize="15sp" android:textColor="@color/text_primary" />
+
+                        <TextView
+                            android:id="@+id/label_asset_hint"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="会从此账户扣除金额"
+                            android:textSize="12sp" android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/text_asset"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="请选择" android:textSize="15sp" android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="@color/divider" />
+
+                <LinearLayout
+                    android:id="@+id/row_photo"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <TextView
+                        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                        android:text="借据照片" android:textSize="15sp" android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_photo"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="选填" android:textSize="15sp" android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="›" android:textSize="18sp" android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

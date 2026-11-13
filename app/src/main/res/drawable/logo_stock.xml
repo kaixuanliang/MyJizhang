@@ -1,0 +1,10 @@
+<!-- 股票：橙红圆底 + 白色上升折线箭头 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#E8590C" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7.5" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:pathData="M26,74 L44,56 L58,67 L82,39" />
+    <path android:fillColor="#FFFFFF" android:pathData="M66,32 H86 V52 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M24,82 H84 V87 H24 Z" />
+</vector>

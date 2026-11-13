@@ -1,0 +1,9 @@
+<!-- 信用卡：蓝紫圆底 + 白色银行卡 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#4A63D9" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M24,34 H84 A6,6 0 0,1 90,40 V68 A6,6 0 0,1 84,74 H24 A6,6 0 0,1 18,68 V40 A6,6 0 0,1 24,34 Z" />
+    <path android:fillColor="#4A63D9" android:pathData="M18,46 H90 V54 H18 Z" />
+    <path android:fillColor="#4A63D9" android:pathData="M26,60 H48 V65 H26 Z" />
+</vector>

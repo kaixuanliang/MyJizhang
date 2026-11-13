@@ -1,0 +1,28 @@
+# 构建产物
+.gradle/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+.idea/
+
+# 签名与安装包（不入库）
+*.keystore
+*.jks
+*.apk
+*.aab
+release/
+local.properties
+
+# 本地数据与部署产物
+*.db
+*.db-shm
+*.db-wal
+download-site/
+build_log.txt
+
+# 系统
+.DS_Store
+Thumbs.db

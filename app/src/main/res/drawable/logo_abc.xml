@@ -1,0 +1,10 @@
+<!-- 中国农业银行：绿底白色麦穗圆环标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#009454" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,26a28,28 0 1,0 0,56a28,28 0 1,0 0,-56z M54,33a21,21 0 1,1 0,42a21,21 0 1,1 0,-42z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineCap="round" android:pathData="M54,58 L36,38" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineCap="round" android:pathData="M54,58 L72,38" />
+    <path android:fillColor="#FFFFFF" android:pathData="M50,24 H58 V84 H50 Z" />
+</vector>

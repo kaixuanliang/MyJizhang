@@ -1,0 +1,21 @@
+<!-- 支付宝：蓝色圆底 + 白色「支」字标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#1677FF" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <!-- 上横 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M27,34 H81" />
+    <!-- 竖 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M54,24 V58" />
+    <!-- 「又」的横 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M34,58 H74" />
+    <!-- 撇 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M72,61 L40,86" />
+    <!-- 捺 -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M46,64 L82,86" />
+</vector>

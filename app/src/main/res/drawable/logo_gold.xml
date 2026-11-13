@@ -1,0 +1,8 @@
+<!-- 黄金/贵金属：金黄圆底 + 白色金条 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#C9931B" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M22,58 L86,58 L78,76 L30,76 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M34,36 L74,36 L68,52 L40,52 Z" />
+</vector>

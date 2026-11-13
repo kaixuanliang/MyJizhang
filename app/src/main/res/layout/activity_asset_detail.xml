@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_bg">
+
+    <!-- 工具栏：返回 + 标题 + 右上角菜单（修改/删除账户） -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/page_bg"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    <!-- 账户余额卡 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:paddingVertical="14dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="账户余额"
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/text_balance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="¥0"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/text_quota"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- 快捷记账：+支出 / +收入 / +转账（本账户） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_card"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="10dp"
+        android:paddingVertical="12dp">
+
+        <LinearLayout
+            android:id="@+id/btn_quick_pay"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/expense_red" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="支出"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_quick_income"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/income_green" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="收入"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_quick_transfer"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:orientation="horizontal" android:gravity="center">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="＋" android:textSize="16sp" android:textColor="@color/transfer_blue" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="2dp" android:text="转账"
+                android:textSize="15sp" android:textColor="@color/text_primary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="4dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
+</LinearLayout>

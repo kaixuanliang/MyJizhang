@@ -1,0 +1,8 @@
+<!-- 中国银行：红底白色圆环方孔钱标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#A6001A" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,24a30,30 0 1,0 0,60a30,30 0 1,0 0,-60z M54,32a22,22 0 1,1 0,44a22,22 0 1,1 0,-44z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M50,18 H58 V90 H50 Z" />
+</vector>

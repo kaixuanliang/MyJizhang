@@ -1,0 +1,11 @@
+<!-- 债券/固收：青绿圆底 + 白色票据 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#0E8C7F" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M32,24 H70 L80,34 V84 H32 Z" />
+    <path android:fillColor="#0E8C7F" android:pathData="M70,24 L80,34 H70 Z" />
+    <path android:fillColor="#0E8C7F" android:pathData="M41,46 H71 V51 H41 Z" />
+    <path android:fillColor="#0E8C7F" android:pathData="M41,58 H71 V63 H41 Z" />
+    <path android:fillColor="#0E8C7F" android:pathData="M41,70 H58 V75 H41 Z" />
+</vector>

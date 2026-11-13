@@ -1,0 +1,1 @@
+-keep class com.mine.myjizhang.data.entity.** { *; }

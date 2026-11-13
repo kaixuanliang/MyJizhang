@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.LocalJizhang">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".ui.edit.BillEditActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.assets.AssetEditActivity" android:exported="false" />
+        <activity android:name=".ui.assets.AssetDetailActivity" android:exported="false" />
+        <activity android:name=".ui.loans.LoanListActivity" android:exported="false" />
+        <activity android:name=".ui.loans.LoanEditActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.importwizard.ImportWizardActivity" android:exported="false" />
+        <activity android:name=".ui.budget.BudgetActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.mine.myjizhang.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>

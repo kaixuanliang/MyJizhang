@@ -1,0 +1,9 @@
+<!-- 其他账户：灰蓝圆底 + 白色钱包 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#7C8695" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M22,36 H78 A8,8 0 0,1 86,44 V70 A8,8 0 0,1 78,78 H22 A8,8 0 0,1 14,70 V44 A8,8 0 0,1 22,36 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M58,50 H92 V66 H58 A8,8 0 0,1 58,50 Z" />
+    <path android:fillColor="#7C8695" android:pathData="M70,55 A4,4 0 1,0 70,63 A4,4 0 1,0 70,55 Z" />
+</vector>

@@ -1,0 +1,12 @@
+<!-- 京东金融/京东白条：红底白色「京」字标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp" android:height="42dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#E2231A" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,28m-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7" android:strokeLineCap="round" android:pathData="M34,42 H74" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7" android:pathData="M42,52 H66 V72 H42 Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round" android:pathData="M54,72 V80" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round" android:pathData="M46,74 L40,84" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round" android:pathData="M62,74 L68,84" />
+</vector>
