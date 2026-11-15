@@ -12,11 +12,14 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <!-- 分类图标：统一 34dp 圆形淡色底，和资产页的图标语言保持一致 -->
         <TextView
             android:id="@+id/text_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="20sp" />
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textSize="17sp" />
 
         <TextView
             android:id="@+id/text_name"
@@ -51,7 +54,7 @@
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="6dp"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="44dp"
         android:layout_marginTop="4dp"
         android:max="100"
         android:progressTint="@color/primary" />

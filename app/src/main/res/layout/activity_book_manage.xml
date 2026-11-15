@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_bg">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/page_bg"
+        app:title="账本管理"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="10dp"
+        android:text="点账本即可切换，切换后账单、日历、资产、统计都会跟着换"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_books"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingHorizontal="12dp"
+        android:paddingBottom="8dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_add_book"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_margin="12dp"
+        android:text="＋ 新增账本"
+        android:textSize="15sp"
+        android:textColor="@color/surface"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="14dp" />
+</LinearLayout>

@@ -25,7 +25,7 @@ import java.util.UUID
         AccountBook::class, Category::class, Asset::class, Bill::class,
         Loan::class, Adjust::class, Budget::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -117,6 +117,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v6 -> v7：Loan 增加 repayAssetId（记录还款打到了哪个账户）。
+         * 部分还款要能撤销，就必须知道当时动的是哪个账户的余额，否则回退会打到错的地方。
+         */
+        private val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Loan` ADD COLUMN `repayAssetId` TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -126,7 +136,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     .addMigrations(
                         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
-                        MIGRATION_4_5, MIGRATION_5_6
+                        MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
                     )
                     .build()
                     .also { INSTANCE = it }
@@ -151,6 +161,12 @@ abstract class AppDatabase : RoomDatabase() {
 
             // 历史数据修复：图标与分类名不符 / 同类内重复的，重新分配正确图标
             repairCategoryIcons(db)
+
+            // 合并历史版本的重复分类（餐饮→三餐、日用品→日用…）
+            mergeDuplicateCategories(db)
+
+            // 分类顺序按新版的「高频优先」重排（只调 positionWeight，不动名称和账单）
+            reorderCategories(db)
 
             // 分类支出性质：老分类 nature 未设定时按名称推断固定 / 弹性 / 不计收支
             repairCategoryNatures(db)
@@ -201,9 +217,44 @@ abstract class AppDatabase : RoomDatabase() {
 
         /** 重建指定账本的导入借贷记录（先清后建，用于重新导入 / 数据修复） */
         suspend fun rebuildImportedLoansForce(db: AppDatabase, bookId: String) {
+            // 先记住手工记过的还款：这类还款是真的动了账户余额（有对账流水为证），
+            // 重建时如果跟着旧记录一起被删掉，就会出现「账户已经加过钱、借款却显示未还」。
+            val manual = LinkedHashMap<String, Double>()
+            val repoint = mutableListOf<Pair<List<Adjust>, Loan>>()
+            for (l in db.loanDao().getByBook(bookId).filter { it.imported }) {
+                val rows = db.adjustDao().getByRef("loan", l.id, Adjust.KIND_LOAN_REPAY)
+                if (rows.isEmpty()) continue
+                val sum = Math.abs(rows.sumOf { it.amount })
+                if (sum <= 0.004) continue
+                manual[loanKey(l)] = (manual[loanKey(l)] ?: 0.0) + sum
+                repoint += rows to l
+            }
             db.loanDao().deleteImportedByBook(bookId)
             rebuildImportedLoans(db, bookId)
+            if (manual.isEmpty()) return
+
+            // 把手工还款按「方向 + 对方 + 金额 + 借款日」匹配回新建的记录
+            val fresh = db.loanDao().getByBook(bookId).filter { it.imported }
+            for (loan in fresh) {
+                val add = manual[loanKey(loan)] ?: continue
+                if (add <= 0.004) continue
+                loan.repaidAmount = (loan.repaidAmount + add).coerceAtMost(loan.amount)
+                loan.repaid = loan.repaidAmount >= loan.amount - 0.005
+                db.loanDao().update(loan)
+                manual.remove(loanKey(loan))
+                // 对账流水的 refId 指向新记录，之后「撤销还款」还能找到它
+                for ((rows, old) in repoint) {
+                    if (loanKey(old) != loanKey(loan)) continue
+                    for (r in rows) db.adjustDao().insert(r.copy(refId = loan.id))
+                }
+            }
         }
+
+        /** 借款匹配键：同一个人、同方向、同金额、同借款日，基本可以唯一确定一笔 */
+        private fun loanKey(l: Loan): String =
+            listOf(l.direction, l.person.replace(" ", ""), Math.round(l.amount * 100), l.borrowDate).joinToString("|")
+
+        /** 重建指定账本的导入借贷记录（幂等：某账本已有导入记录就跳过）。 */
 
         /** 老账户类型规范化：subType 为空 / 其他 / 与名称语义不符时按名称重新推断 */
         private suspend fun normalizeAssets(db: AppDatabase) {
@@ -266,6 +317,63 @@ abstract class AppDatabase : RoomDatabase() {
                         db.categoryDao().update(c)
                     }
                     used.add(icon)
+                }
+            }
+        }
+
+        /**
+         * 合并重复分类。两种情形：
+         * ① 保留项存在 → 把账单 / 预算改挂过去，删掉多余的分类；
+         * ② 只有老旧写法（比如只有「餐饮」）→ 直接改名成保留项，账单不用动。
+         * 幂等：第二次启动找不到旧名字就什么也不做。
+         */
+        private suspend fun mergeDuplicateCategories(db: AppDatabase) {
+            val books = db.bookDao().getAll()
+            for ((from, to) in CategoryIcons.mergeAlias) {
+                val old = db.categoryDao().findByName(from, 0) ?: continue
+                val keep = db.categoryDao().findByName(to, 0)
+                if (keep == null) {
+                    // 只有旧写法：改名即可，bill.categoryId 指向的是 id，不受影响
+                    old.name = to
+                    old.icon = CategoryIcons.iconOf(to, 0) ?: old.icon
+                    db.categoryDao().update(old)
+                    continue
+                }
+                db.billDao().remapCategory(old.id, keep.id)
+                // 预算可能冲突：保留项已有预算就把旧分类那条删掉，否则改挂
+                for (book in books) {
+                    val budgets = db.budgetDao().getByBook(book.id)
+                    val oldBudget = budgets.filter { it.categoryId == old.id }
+                    if (oldBudget.isEmpty()) continue
+                    val keepHas = budgets.any { it.categoryId == keep.id }
+                    if (keepHas) {
+                        oldBudget.forEach { db.budgetDao().delete(it) }
+                    } else {
+                        db.budgetDao().remapCategory(old.id, keep.id)
+                    }
+                }
+                db.categoryDao().delete(old)
+            }
+        }
+
+        /**
+         * 按新版默认顺序重排分类：命中的按 order 的索引排，未命中的（用户自建、导入的）
+         * 统一排到后面并保持它们彼此原有的相对顺序。
+         */
+        private suspend fun reorderCategories(db: AppDatabase) {
+            for (type in 0..1) {
+                val order = if (type == 1) CategoryIcons.incomeOrder else CategoryIcons.expenseOrder
+                val idx = order.withIndex().associate { it.value to it.index }
+                val cats = db.categoryDao().getAll()
+                    .filter { it.type == type }
+                    .sortedBy { it.positionWeight }
+                val known = cats.filter { idx.containsKey(it.name) }.sortedBy { idx[it.name] }
+                val unknown = cats.filter { !idx.containsKey(it.name) }
+                (known + unknown).forEachIndexed { i, c ->
+                    if (c.positionWeight != i) {
+                        c.positionWeight = i
+                        db.categoryDao().update(c)
+                    }
                 }
             }
         }

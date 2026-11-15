@@ -233,8 +233,9 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 卡3：计入总资产 -->
+        <!-- 卡3：计入总资产（信贷账户固定计入负债，不显示该开关） -->
         <LinearLayout
+            android:id="@+id/card_in_total"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

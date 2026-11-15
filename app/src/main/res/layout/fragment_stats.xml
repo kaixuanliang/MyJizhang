@@ -112,6 +112,8 @@
                     <TextView android:id="@+id/hp_fixed" android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
                         android:textStyle="bold" android:textColor="@color/text_primary" />
+                    <TextView android:id="@+id/hp_fixed_pct" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="占 0%" android:textSize="11sp" android:textColor="@color/text_secondary" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -122,6 +124,8 @@
                     <TextView android:id="@+id/hp_flex" android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginTop="4dp" android:text="0.00" android:textSize="17sp"
                         android:textStyle="bold" android:textColor="@color/text_primary" />
+                    <TextView android:id="@+id/hp_flex_pct" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="占 0%" android:textSize="11sp" android:textColor="@color/text_secondary" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -160,6 +164,17 @@
                     android:textSize="12sp"
                     android:textColor="@color/text_secondary" />
             </LinearLayout>
+
+            <!-- 固定/弹性从哪来：以前只能靠名称关键字猜，现在可手动标记 -->
+            <TextView
+                android:id="@+id/hp_nature_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:paddingVertical="2dp"
+                android:text="固定 / 弹性支出按分类性质统计，点这里去标记 ›"
+                android:textSize="11sp"
+                android:textColor="@color/primary" />
         </LinearLayout>
 
         <!-- 资产走势图 -->
@@ -255,7 +270,8 @@
             <com.mine.myjizhang.ui.stats.PieChartView
                 android:id="@+id/pie"
                 android:layout_width="match_parent"
-                android:layout_height="220dp" />
+                android:layout_height="264dp"
+                android:layout_marginTop="6dp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler"

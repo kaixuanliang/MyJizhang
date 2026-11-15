@@ -21,6 +21,8 @@ data class Loan(
     var imported: Boolean = false,
     /** 已归还金额（支持部分还款；总借入/总借出按 amount - repaidAmount 统计） */
     var repaidAmount: Double = 0.0,
+    /** 最近一次还款用的账户（撤销还款时按它回退余额，空串表示沿用 assetId） */
+    var repayAssetId: String = "",
     val createTime: Long = 0
 ) {
     /** 尚未归还的金额 */

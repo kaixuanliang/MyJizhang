@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="4dp">
+
+    <!-- 这笔的来龙去脉：借多少、已经还了多少、还剩多少 -->
+    <TextView
+        android:id="@+id/text_loan_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:lineSpacingExtra="3dp"
+        android:textColor="@color/text_secondary" />
+
+    <!-- 金额 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="本次金额"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/btn_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:background="@drawable/bg_pill_primary"
+            android:text="全额"
+            android:textSize="12sp"
+            android:textColor="@color/primary" />
+
+        <EditText
+            android:id="@+id/input_amount"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:inputType="numberDecimal"
+            android:hint="0.00"
+            android:importantForAutofill="no"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/divider" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/divider" />
+
+    <!-- 日期 -->
+    <LinearLayout
+        android:id="@+id/row_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingVertical="14dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="日期"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/text_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <!-- 资金账户 -->
+    <LinearLayout
+        android:id="@+id/row_account"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingVertical="14dp">
+
+        <TextView
+            android:id="@+id/label_account"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="收到账户"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/text_account"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/primary" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <EditText
+        android:id="@+id/input_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:hint="备注（选填，例如：先还一部分）"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:textSize="14sp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/divider" />
+</LinearLayout>

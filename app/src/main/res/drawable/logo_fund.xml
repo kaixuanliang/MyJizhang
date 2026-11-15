@@ -1,15 +1,13 @@
-<!-- 基金：蓝色圆底 + 白色饼图 -->
+<!-- 基金：蓝色圆底 + 三块饼图（组合配置），三档蓝色区分权重 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="42dp" android:height="42dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#2F6FED" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <!-- 白色饼体 -->
-    <path android:fillColor="#FFFFFF" android:pathData="M54,54 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0 Z" />
-    <!-- 分割线 -->
-    <path android:strokeColor="#2F6FED" android:strokeWidth="5" android:strokeLineCap="round"
-        android:pathData="M54,54 L54,26" />
-    <path android:strokeColor="#2F6FED" android:strokeWidth="5" android:strokeLineCap="round"
-        android:pathData="M54,54 L74,34" />
-    <path android:strokeColor="#2F6FED" android:strokeWidth="5" android:strokeLineCap="round"
-        android:pathData="M54,54 L76,74" />
+    <path android:fillColor="#2F6FED"
+        android:pathData="M54,0a54,54 0,1 0,0,108 a54,54 0,1 0,0,-108 z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M54.00,54.00 L54.00,23.00 A31.00,31.00 0 0,1 82.10,67.10 Z" />
+    <path android:fillColor="#A1BEF7"
+        android:pathData="M54.00,54.00 L81.11,69.03 A31.00,31.00 0 0,1 28.92,72.22 Z" />
+    <path android:fillColor="#5D8FF1"
+        android:pathData="M54.00,54.00 L27.71,70.43 A31.00,31.00 0 0,1 50.22,23.23 Z" />
 </vector>

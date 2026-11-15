@@ -51,6 +51,34 @@ object Reconcile {
         )
     }
 
+    /**
+     * 撤销某个业务对象（像一笔借款的还款）写下的全部余额调整：
+     * 按账户把金额原路退回，并删掉这些对账流水。返回实际回滚的金额合计。
+     *
+     * 用「流水」而不是「记录的已还金额」来回滚，是因为借款的已还金额里
+     * 可能有一部分来自账单推导（那部分的钱是账单动的，不能在这里重复退）。
+     */
+    suspend fun revertByRef(
+        db: AppDatabase,
+        refType: String,
+        refId: String,
+        kind: Int
+    ): Double {
+        if (refType.isBlank() || refId.isBlank()) return 0.0
+        val rows = db.adjustDao().getByRef(refType, refId, kind)
+        if (rows.isEmpty()) return 0.0
+        var total = 0.0
+        for ((assetId, sum) in rows.groupBy { it.assetId }.mapValues { e -> e.value.sumOf { it.amount } }) {
+            if (assetId.isNotBlank() && Math.abs(sum) > 0.004) {
+                changeBalance(db, assetId, -sum)
+                total += sum
+            }
+        }
+        for (r in rows) db.adjustDao().deleteById(r.id)
+        // 返回绝对金额：借入的流水是负数、借出是正数，调用方只关心「退回来多少钱」
+        return Math.abs(total)
+    }
+
     /** 只记账不做余额调整的备忘（删除/修改账单、改账户信息），保证审计有痕但等式不失衡 */
     suspend fun memo(
         db: AppDatabase,

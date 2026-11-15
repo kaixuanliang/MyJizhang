@@ -120,6 +120,20 @@
                 android:paddingTop="12dp"
                 android:paddingBottom="16dp" />
 
+            <!-- 收入侧不再列出借贷分类，给一句去处提示，免得用户找不到「收回借款」 -->
+            <TextView
+                android:id="@+id/text_income_loan_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/surface"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp"
+                android:paddingTop="0dp"
+                android:text="借出、借入、收回借款、还款都不在这里记 —— 到「资产 → 总借出 / 总借入」添加或点「记录还款」，能挂到具体某个人、某一笔，还支持部分还款"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+
             <!-- 转账：转出账户 / 转入账户 -->
             <LinearLayout
                 android:id="@+id/row_transfer_container"

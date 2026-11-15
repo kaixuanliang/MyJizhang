@@ -9,7 +9,7 @@ import java.util.zip.ZipOutputStream
 
 /**
  * 轻量 xlsx 写入器（无需 POI）。
- * 所有单元格以 inline string 写入，与一飞记账导出格式一致（其数值列同样是文本单元格）。
+ * 所有单元格以 inline string 写入，金额列同样按文本单元格输出，跨设备打开不乱码。
  */
 object XlsxWriter {
 

@@ -6,10 +6,14 @@ import com.mine.myjizhang.ui.assets.AssetTypes
 import com.mine.myjizhang.util.Money
 
 /**
- * 导出为与一飞记账完全一致的 xlsx 结构（支出/收入/转账 三个 sheet），
- * 保证两个 App 之间可互相迁移。
+ * 导出标准 xlsx 结构（支出/收入/转账 三个 sheet，外加账户与对账快照），
+ * 保证导出后再导入能精确还原余额。
  */
 object BillExporter {
+
+    /** 带符号的金额文本：信贷账户欠款是负数，必须保留负号，否则导入后欠款会变成「资产」 */
+    private fun signed(v: Double): String = (if (v < 0) "-" else "") + Money.fmt(v)
+
 
     private val EXPENSE_HEADER = listOf(
         "所属账本", "支出时间", "支出分类", "支出金额", "支出账户", "备注", "账单图片",
@@ -105,12 +109,12 @@ object BillExporter {
                 accountRows.add(
                     listOf(
                         bName, a.name, a.subType, AssetTypes.groupOf(a.subType, a.type, a.name),
-                        Money.fmt(a.amount), if (a.inTotalAsset) "是" else "否",
+                        signed(a.amount), if (a.inTotalAsset) "是" else "否",
                         if (a.totalQuota > 0) Money.fmt(a.totalQuota) else null,
                         if (a.chargeOffDate in 1..31) "${a.chargeOffDate}" else null,
                         if (a.repaymentDate in 1..31) "${a.repaymentDate}" else null,
                         a.remark,
-                        Money.fmt(a.openingBalance)
+                        signed(a.openingBalance)
                     )
                 )
             }
@@ -118,8 +122,8 @@ object BillExporter {
                 adjustRows.add(
                     listOf(
                         bName, XlsxWriter.fmtTime(ad.time), ad.assetName,
-                        Money.fmt(ad.amount), com.mine.myjizhang.data.entity.Adjust.kindName(ad.kind),
-                        ad.note, Money.fmt(ad.balanceAfter)
+                        signed(ad.amount), com.mine.myjizhang.data.entity.Adjust.kindName(ad.kind),
+                        ad.note, signed(ad.balanceAfter)
                     )
                 )
             }

@@ -123,7 +123,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:gravity="center"
-                android:text="净资产 = 可支配 + 投资 + 应收借出 − 负债（含未还借入）"
+                android:text="净资产 = 可支配 + 投资 + 应收借出 − 负债（含信贷账户欠款与未还借入）"
                 android:textSize="11sp"
                 android:textColor="#B8D4EE" />
         </LinearLayout>

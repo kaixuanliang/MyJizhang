@@ -21,8 +21,8 @@ android {
         applicationId "com.mine.myjizhang"
         minSdk 26
         targetSdk 34
-        versionCode 12
-        versionName "1.6.5"
+        versionCode 23
+        versionName "1.7.6"
     }
 
     signingConfigs {
@@ -73,4 +73,7 @@ dependencies {
     kapt 'androidx.room:room-compiler:2.6.1'
 
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // 定时自动同步（WorkManager 周期任务，重启后自动恢复）
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
 }

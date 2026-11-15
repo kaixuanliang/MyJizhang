@@ -57,4 +57,37 @@
         android:textSize="12sp"
         android:textColor="@color/text_secondary"
         android:visibility="gone" />
+
+    <!-- 操作区：还款/收回放在外面，不然只能靠长按，没人找得到 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical">
+
+        <TextView
+            android:id="@+id/btn_repay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:background="@drawable/bg_pill_primary"
+            android:text="记录还款"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary" />
+
+        <TextView
+            android:id="@+id/btn_more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:background="@drawable/bg_pill_outline"
+            android:text="更多"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+    </LinearLayout>
 </LinearLayout>

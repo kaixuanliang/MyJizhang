@@ -26,6 +26,7 @@ import com.mine.myjizhang.data.entity.Category
 import com.mine.myjizhang.ui.bills.BillAdapter
 import com.mine.myjizhang.ui.bills.Row
 import com.mine.myjizhang.ui.edit.BillEditActivity
+import com.mine.myjizhang.ui.TabRefreshable
 import com.mine.myjizhang.util.DateTimes
 import com.mine.myjizhang.util.Money
 import kotlinx.coroutines.Job
@@ -33,7 +34,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class CalendarFragment : Fragment() {
+class CalendarFragment : Fragment(), TabRefreshable {
 
     private val db by lazy { AppDatabase.get(requireContext()) }
     private val adapter = BillAdapter(
@@ -139,6 +140,8 @@ class CalendarFragment : Fragment() {
             .show()
     }
 
+    override fun refreshTab() = refresh()
+
     fun refresh() {
         textMonth.text = "${year}年${month}月 ▼"
         collectJob?.cancel()
@@ -152,6 +155,26 @@ class CalendarFragment : Fragment() {
             adapter.categoryIcon = { id -> categories.firstOrNull { it.id == id }?.icon ?: "💡" }
             val nameMap = assets.associate { it.id to it.name }
             adapter.assetName = { id -> nameMap[id] ?: "已删除账户" }
+
+            // 分类跟着数据库走（导入会新建分类）
+            launch {
+                db.categoryDao().observeAll().collectLatest { list ->
+                    categories = list
+                    adapter.categoryName = { id -> list.firstOrNull { it.id == id }?.name ?: "" }
+                    adapter.categoryIcon = { id -> list.firstOrNull { it.id == id }?.icon ?: "💡" }
+                    showDay(selectedDay)
+                }
+            }
+
+            // 账户名跟随数据库变化（导入账单会新建账户，避免显示「已删除账户」）
+            launch {
+                db.assetDao().observeByBook(bookId).collectLatest { list ->
+                    assets = list
+                    val map = list.associate { it.id to it.name }
+                    adapter.assetName = { id -> map[id] ?: "已删除账户" }
+                    showDay(selectedDay)
+                }
+            }
 
             val start = DateTimes.monthStart(year, month)
             val end = DateTimes.monthEnd(year, month)

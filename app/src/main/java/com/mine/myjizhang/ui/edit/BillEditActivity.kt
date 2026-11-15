@@ -17,7 +17,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -25,14 +24,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.mine.myjizhang.R
 import com.mine.myjizhang.data.AppDatabase
+import com.mine.myjizhang.data.CategoryIcons
 import com.mine.myjizhang.data.Pref
 import com.mine.myjizhang.data.entity.Asset
 import com.mine.myjizhang.data.entity.Bill
 import com.mine.myjizhang.data.entity.Category
 import com.mine.myjizhang.ui.assets.AssetTypes
+import com.mine.myjizhang.ui.widget.SheetList
 import com.mine.myjizhang.util.Money
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -85,6 +85,9 @@ class BillEditActivity : AppCompatActivity() {
         }
         categoryGrid.layoutManager = GridLayoutManager(this, 5)
         categoryGrid.adapter = categoryAdapter
+        // 网格嵌在外层 ScrollView 里：关掉自己的滚动，高度按内容撑开，
+        // 否则分类一多（支出 28 项）会只显示两三行
+        categoryGrid.isNestedScrollingEnabled = false
 
         amountText = findViewById(R.id.input_amount)
         remarkInput = findViewById(R.id.input_remark)
@@ -132,9 +135,10 @@ class BillEditActivity : AppCompatActivity() {
         billType = t
         lifecycleScope.launch {
             categories = db.categoryDao().getByType(if (t == 1) 1 else 0)
-            selectedCategoryId = categories.firstOrNull()?.id ?: ""
+            val visible = visibleCategories()
+            selectedCategoryId = visible.firstOrNull()?.id ?: ""
             applyTypeUI()
-            categoryAdapter.submit(visibleCategories(), selectedCategoryId)
+            categoryAdapter.submit(visible, selectedCategoryId)
             updateChips()
         }
     }
@@ -150,13 +154,27 @@ class BillEditActivity : AppCompatActivity() {
         findViewById<View>(R.id.ind_transfer).visibility = if (billType == 2) View.VISIBLE else View.INVISIBLE
 
         categoryGrid.visibility = if (billType == 2) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.text_income_loan_hint).visibility =
+            if (billType == 2) View.GONE else View.VISIBLE
         findViewById<View>(R.id.row_transfer_container).visibility =
             if (billType == 2) View.VISIBLE else View.GONE
         updateAccountCards()
     }
 
-    private fun visibleCategories(): List<Category> =
-        if (billType == 2) emptyList() else categories
+    /**
+     * 可选的分类。
+     *
+     * 借出 / 借入 / 收回借款 / 还款都不再走「记一笔」：这些操作要挂到具体某个人、某一笔上，
+     * 还得支持部分还款，只能到「资产 → 总借出 / 总借入」里做。留在这里反而误导——
+     * 记了也不会进「总借出」，统计里又被当成不计收支，等于记了个寂寞。
+     */
+    private fun visibleCategories(): List<Category> {
+        if (billType == 2) return emptyList()
+        val list = categories.filter { CategoryIcons.loanDirection(it.name) == null }
+        // 编辑老账单时它挂的可能是已被隐藏的借贷分类，补回去，不然选不上也看不见
+        val current = categories.firstOrNull { it.id == selectedCategoryId }
+        return if (current != null && list.none { it.id == current.id }) list + current else list
+    }
 
     /** 转账两个卡片：未选账户时显示提示 + 问号 */
     private fun updateAccountCards() {
@@ -399,24 +417,22 @@ class BillEditActivity : AppCompatActivity() {
             Toast.makeText(this, "还没有资产账户，请先去【资产】页添加", Toast.LENGTH_LONG).show()
             return
         }
-        val dialog = BottomSheetDialog(this)
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(20), dp(20), dp(24))
-        }
-        content.addView(TextView(this).apply {
-            text = "选择账户"
-            textSize = 18f
-            setTextColor(getColor(R.color.text_primary))
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, dp(12))
-        })
-        for (a in assets) {
-            content.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(12), 0, dp(12))
-                setOnClickListener {
+        // 标题固定在顶部，列表在固定高度里滚动（账户多的时候不会把弹窗撑满屏）
+        val sheet = SheetList.create(this, "选择账户", assets.size, 56)
+        assets.forEach { a ->
+            val icon = SheetList.iconView(this, 32).also {
+                AssetTypes.bindIcon(it, a.name, a.subType, a.icon)
+            }
+            sheet.list.addView(
+                SheetList.row(
+                    this,
+                    title = a.name,
+                    heightDp = 56,
+                    icon = icon,
+                    subtitle = AssetTypes.groupOf(a.subType, a.type, a.name).let { g ->
+                        if (g == AssetTypes.GROUP_CREDIT) "信贷 · 欠款" else null
+                    }
+                ) {
                     when (which) {
                         0 -> selectedAssetId = a.id
                         1 -> fromAssetId = a.id
@@ -424,23 +440,11 @@ class BillEditActivity : AppCompatActivity() {
                     }
                     updateAccountCards()
                     updateChips()
-                    dialog.dismiss()
+                    sheet.dialog.dismiss()
                 }
-                addView(TextView(this@BillEditActivity).apply {
-                    gravity = Gravity.CENTER
-                    layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
-                    AssetTypes.bindIcon(this, a.name, a.subType, a.icon)
-                })
-                addView(TextView(this@BillEditActivity).apply {
-                    text = a.name
-                    textSize = 16f
-                    setTextColor(getColor(R.color.text_primary))
-                    setPadding(dp(14), 0, 0, 0)
-                })
-            })
+            )
         }
-        dialog.setContentView(ScrollView(this).apply { addView(content) })
-        dialog.show()
+        sheet.dialog.show()
     }
 
     // ---------------- 保存 ----------------

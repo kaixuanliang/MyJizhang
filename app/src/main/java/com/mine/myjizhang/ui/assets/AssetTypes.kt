@@ -1,10 +1,14 @@
 package com.mine.myjizhang.ui.assets
 
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.util.TypedValue
+import android.view.Gravity
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 
-/** 资产类型定义（对齐一飞记账「请选择资产类型」弹窗） */
+/** 资产类型定义（「请选择资产类型」弹窗用） */
 data class AssetTypeInfo(
     val name: String,      // 类型名（存入 Asset.subType）
     val group: String,     // 分组：信贷账户 / 充值账户 / 资金账户 / 投资理财账户
@@ -108,6 +112,10 @@ object AssetTypes {
             name.contains("京东") -> byName["京东金融"]!!
             name.contains("云闪付") -> byName["云闪付"]!!
             name.contains("数字人民币") || name.contains("e-CNY") -> byName["数字人民币"]!!
+            // 银行清单只留了 19 家主流银行，长尾银行（江苏银行、农商行、村镇银行…）
+            // 靠这个兜底仍然归到「储蓄卡」，不会因为名字不在清单里就掉进「其他」
+            name.contains("银行") || name.contains("农商") ||
+                name.contains("信用社") || name.contains("农信") -> byName["储蓄卡"]!!
             bankOf(name) != null -> byName["储蓄卡"]!!
             else -> byName["其他"]!!
         }
@@ -116,59 +124,103 @@ object AssetTypes {
     /** 兼容旧引用：银行列表已迁移到 Banks */
     val banks: List<Pair<String, Bank>> get() = Banks.all.map { it.name to it.bank }
 
-    private val bankMap: Map<String, Bank> get() = Banks.all.associate { it.name to it.bank }
-
     /** 从账户名里找银行（如「广发银行信用卡」） */
     fun bankOf(name: String): Bank? = Banks.of(name)
 
     /**
-     * 渲染图标：
-     * 1) 账户名/类型名命中 BankLogos → 直接用官方风格 logo（矢量 drawable）
-     * 2) icon 为文字缩写 → 品牌色实底白字
-     * 3) 否则 → emoji 淡色圆底
+     * 渲染图标（三档优先级）：
+     * 1) 图形本身就是品牌标识的 → 直接用矢量 drawable（微信气泡 / 现金 / 信用卡 / 投资理财类…）
+     * 2) 银行、支付平台 → 品牌色渐变圆标 + 白色汉字缩写（工/建/招/支/花…）
+     * 3) 其它 → emoji 淡色圆底
      */
     fun bindIcon(view: TextView, name: String, subType: String, icon: String) {
-        val d = view.resources.displayMetrics.density
         val ctx = view.context
 
-        // ① 真实 logo 优先（按账户名，其次按资产类型名）
+        // ① 品牌矢量图优先（按账户名，其次按资产类型名）
         val logoRes = BankLogos.res(name).takeIf { it != 0 } ?: BankLogos.res(subType)
         if (logoRes != 0) {
             view.text = ""
-            view.background = androidx.core.content.ContextCompat.getDrawable(ctx, logoRes)
+            view.background = ContextCompat.getDrawable(ctx, logoRes)
             view.setTextColor(Color.WHITE)
             view.setPadding(0, 0, 0, 0)
             return
         }
 
-        val text: String
-        val bg: GradientDrawable
-        if (icon.isNotBlank() && icon.matches(Regex("[\\p{ASCII}\\u4e00-\\u9fa5]{1,2}")) &&
-            !icon.first().isEmoji()
-        ) {
-            // 文字 logo（银行缩写字）
-            val bank = bankMap.values.firstOrNull { it.short == icon }
-            val colorStr = bank?.color ?: info(subType)?.color ?: "#3D9BE9"
-            text = icon
-            bg = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.parseColor(colorStr))
-            }
-            view.setTextColor(Color.WHITE)
-            view.textSize = if (icon.length >= 2) 12f else 16f
-        } else {
-            val colorStr = info(subType)?.color ?: "#3D9BE9"
-            text = icon.ifBlank { info(subType)?.emoji ?: "🏦" }
-            bg = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(applyAlpha(Color.parseColor(colorStr), 0x22))
-            }
-            view.setTextColor(Color.parseColor(colorStr))
-            view.textSize = 20f
+        // ② 银行 / 支付平台：品牌色圆标 + 汉字（统一风格，32dp 下依然清楚）
+        val brand = Banks.of(name)
+            ?: Brands.of(name)
+            ?: bankByShort(icon)
+            ?: Banks.of(subType)
+            ?: Brands.of(subType)
+        if (brand != null && brand.short.isNotBlank()) {
+            bindBadge(view, brand.short, brand.color)
+            return
+        }
+
+        // ③ 存量的自定义文字缩写（老数据里 icon 存了「工」「建」这类）
+        if (icon.isNotBlank() && icon.matches(BADGE_TEXT) && !icon.first().isEmoji()) {
+            bindBadge(view, icon, info(subType)?.color ?: "#3D9BE9")
+            return
+        }
+
+        // ④ emoji 淡色圆底
+        val colorStr = info(subType)?.color ?: "#3D9BE9"
+        view.text = icon.ifBlank { info(subType)?.emoji ?: "🏦" }
+        view.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(applyAlpha(Color.parseColor(colorStr), 0x22))
+        }
+        view.setTextColor(Color.parseColor(colorStr))
+        view.textSize = 20f
+        view.setPadding(0, 0, 0, 0)
+    }
+
+    private val BADGE_TEXT = Regex("[\\p{ASCII}\\u4e00-\\u9fa5]{1,3}")
+
+    private fun bankByShort(short: String): Bank? =
+        if (short.isBlank()) null else Banks.all.firstOrNull { it.bank.short == short }?.bank
+
+    /**
+     * 品牌色渐变圆标 + 白色字标。
+     * 字号按圆标尺寸换算（单字 52%、双字 40%），并关掉字体额外行距，
+     * 避免「中信」「浦发」这类双字标被挤出圆外。
+     */
+    private fun bindBadge(view: TextView, text: String, colorStr: String) {
+        val d = view.resources.displayMetrics.density
+        val w = view.layoutParams?.width ?: 0
+        val base = if (w > 0) w.toFloat() else 40 * d
+        val ratio = when (text.length) {
+            1 -> 0.52f
+            2 -> 0.40f
+            else -> 0.32f
+        }
+        val color = try {
+            Color.parseColor(colorStr)
+        } catch (e: Exception) {
+            Color.parseColor("#3D9BE9")
         }
         view.text = text
-        view.background = bg
-        view.setPadding((6 * d).toInt(), 0, (6 * d).toInt(), 0)
+        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, base * ratio)
+        view.typeface = Typeface.DEFAULT_BOLD
+        view.gravity = Gravity.CENTER
+        view.includeFontPadding = false
+        view.maxLines = 1
+        view.setTextColor(Color.WHITE)
+        view.setPadding(0, 0, 0, 0)
+        view.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(lighten(color, 0.16f), color)
+        ).apply {
+            shape = GradientDrawable.OVAL
+        }
+    }
+
+    /** 顶部提亮一点，圆标不会显得死板 */
+    private fun lighten(color: Int, ratio: Float): Int {
+        val r = (Color.red(color) + (255 - Color.red(color)) * ratio).toInt().coerceAtMost(255)
+        val g = (Color.green(color) + (255 - Color.green(color)) * ratio).toInt().coerceAtMost(255)
+        val b = (Color.blue(color) + (255 - Color.blue(color)) * ratio).toInt().coerceAtMost(255)
+        return Color.rgb(r, g, b)
     }
 
     /**

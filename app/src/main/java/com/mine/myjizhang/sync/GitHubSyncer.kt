@@ -33,7 +33,8 @@ data class SyncConfig(
     var password: String = "",  // 加密密码（为空表示不加密）
     var path: String = "jizhang-backup.bin",
     var lastSyncTime: Long = 0,
-    var lastSyncAction: String = ""
+    var lastSyncAction: String = "",
+    var autoSyncDays: Int = 0   // 自动同步间隔：0 关闭 / 1 每天 / 7 每星期 / 30 每月
 )
 
 sealed class SyncResult {
@@ -201,11 +202,17 @@ object GitHubSyncer {
     private fun contentUrl(cfg: SyncConfig) =
         "https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}?ref=${cfg.branch}"
 
-    private fun apiRequest(cfg: SyncConfig, url: String, method: String, body: String? = null): Request {
+    private fun apiRequest(
+        cfg: SyncConfig,
+        url: String,
+        method: String,
+        body: String? = null,
+        accept: String = "application/vnd.github+json"
+    ): Request {
         val builder = Request.Builder()
             .url(url)
             .header("Authorization", "Bearer ${cfg.token}")
-            .header("Accept", "application/vnd.github+json")
+            .header("Accept", accept)
             .header("X-GitHub-Api-Version", "2022-11-28")
         when (method) {
             "GET" -> builder.get()
@@ -222,6 +229,20 @@ object GitHubSyncer {
             if (it.code == 404) return@withContext null
             if (!it.isSuccessful) throw RuntimeException("GitHub API ${it.code}")
             JSONObject(it.body!!.string()).optString("sha").ifBlank { null }
+        }
+    }
+
+    /**
+     * 直接下载原始字节（Accept: raw）。
+     * Contents API 对超过 1 MB 的文件不会内联返回 base64（encoding = "none"、content 为空），
+     * 此时必须走这条路径，否则恢复会报「不支持的文件编码: none」。
+     */
+    private suspend fun downloadRawBytes(cfg: SyncConfig): ByteArray? = withContext(Dispatchers.IO) {
+        val req = apiRequest(cfg, contentUrl(cfg), "GET", accept = "application/vnd.github.raw")
+        client.newCall(req).execute().use { resp ->
+            if (resp.code == 404) return@withContext null
+            if (!resp.isSuccessful) throw RuntimeException("下载失败 HTTP ${resp.code}")
+            resp.body?.bytes()
         }
     }
 
@@ -270,13 +291,19 @@ object GitHubSyncer {
         require(cfg.repo.isNotBlank() && cfg.token.isNotBlank()) { "请先配置仓库与 Token" }
         withContext(Dispatchers.IO) {
             val resp = client.newCall(apiRequest(cfg, contentUrl(cfg), "GET")).execute()
-            resp.use { it ->
-                if (it.code == 404) return@use SyncResult.Failure("仓库里还没有备份文件")
-                if (!it.isSuccessful) return@use SyncResult.Failure("下载失败 HTTP ${it.code}")
-                val json = JSONObject(it.body!!.string())
+            resp.use { r ->
+                if (r.code == 404) return@use SyncResult.Failure("仓库里还没有备份文件")
+                if (!r.isSuccessful) return@use SyncResult.Failure("下载失败 HTTP ${r.code}")
+                val json = JSONObject(r.body!!.string())
                 val encoding = json.optString("encoding")
-                if (encoding != "base64") return@use SyncResult.Failure("不支持的文件编码: $encoding")
-                val content = Base64.decode(json.getString("content").replace("\n", ""), Base64.NO_WRAP)
+                val inline = json.optString("content")
+                val content: ByteArray = if (encoding == "base64" && inline.isNotBlank()) {
+                    Base64.decode(inline.filterNot { it.isWhitespace() }, Base64.DEFAULT)
+                } else {
+                    // 大文件（>1MB）Contents API 不返回内容，改用 raw 直接下载
+                    downloadRawBytes(cfg) ?: return@use SyncResult.Failure("仓库里还没有备份文件")
+                }
+                if (content.isEmpty()) return@use SyncResult.Failure("备份文件是空的，请先上传一次")
                 val plain = if (GitHubSyncer.isEncrypted(content)) {
                     if (cfg.password.isBlank()) return@use SyncResult.Failure("备份已加密，请先填写加密密码")
                     try {

@@ -1,8 +1,0 @@
-<!-- 兴业银行：深蓝底白色圆环斜杠标 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="42dp" android:height="42dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#002E73" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M54,30a24,24 0 1,0 0,48a24,24 0 1,0 0,-48z M54,37a17,17 0 1,1 0,34a17,17 0 1,1 0,-34z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M40,68 L68,40" />
-</vector>

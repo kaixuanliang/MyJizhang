@@ -38,7 +38,7 @@ class BudgetActivity : AppCompatActivity() {
         container = findViewById(R.id.container)
         setSupportActionBar(findViewById(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "预算设置"
+        supportActionBar?.title = "预算与分类"
         findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
             .setNavigationOnClickListener { finish() }
 
@@ -80,7 +80,15 @@ class BudgetActivity : AppCompatActivity() {
             setPadding(0, dp(18), 0, dp(4))
         })
         container.addView(TextView(this).apply {
-            text = "按分类控制支出，留空或填 0 表示不单独设限"
+            text = "右侧金额是每月预算上限，留空或填 0 表示不单独设限"
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(0, 0, 0, dp(4))
+        })
+        // 分类性质以前只能靠名称关键字在后台猜，现在这里可以直接点选
+        container.addView(TextView(this).apply {
+            text = "左侧标签是分类性质：统计页的「固定支出」＝ 标成固定的分类在本月实际花掉的钱，" +
+                "不是这里填的预算金额"
             textSize = 12f
             setTextColor(getColor(R.color.text_secondary))
             setPadding(0, 0, 0, dp(8))
@@ -99,9 +107,12 @@ class BudgetActivity : AppCompatActivity() {
                 textSize = 14f
                 setTextColor(getColor(R.color.text_primary))
             }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(natureTag(c))
             val amount = existing.firstOrNull { it.categoryId == c.id && it.month.isBlank() }?.amount ?: 0.0
             val input = numberInput(amount)
-            row.addView(input, LinearLayout.LayoutParams(dp(120), -2))
+            row.addView(input, LinearLayout.LayoutParams(dp(110), -2).apply {
+                marginStart = dp(8)
+            })
             catInputs.add(c.id to input)
             container.addView(row)
             container.addView(View(this).apply {
@@ -109,6 +120,69 @@ class BudgetActivity : AppCompatActivity() {
                 setBackgroundColor(getColor(R.color.divider))
             })
         }
+    }
+
+    /** 分类性质标签：点一下弹出「固定 / 弹性 / 不计收支 / 未设定」，改完只刷新标签本身 */
+    private fun natureTag(c: Category): TextView {
+        val tag = TextView(this).apply {
+            textSize = 12f
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            isClickable = true
+        }
+        renderNatureTag(tag, c.nature)
+        tag.setOnClickListener { showNaturePicker(c, tag) }
+        return tag
+    }
+
+    private fun renderNatureTag(tag: TextView, nature: Int) {
+        val (label, bg, fg) = when (nature) {
+            Category.NATURE_FIXED -> Triple("固定", "#FFF1E6", "#D97706")
+            Category.NATURE_FLEX -> Triple("弹性", "#E8F1FE", "#1E6FD9")
+            Category.NATURE_EXCLUDED -> Triple("不计", "#F0F1F3", "#8A8A90")
+            else -> Triple("未设", "#F5F5F7", "#9A9AA0")
+        }
+        tag.text = label
+        tag.setTextColor(android.graphics.Color.parseColor(fg))
+        tag.background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = dp(10).toFloat()
+            setColor(android.graphics.Color.parseColor(bg))
+        }
+    }
+
+    private fun showNaturePicker(c: Category, tag: TextView) {
+        val options = arrayOf("固定支出", "弹性支出", "不计入收支", "未设定")
+        val current = when (c.nature) {
+            Category.NATURE_FIXED -> 0
+            Category.NATURE_FLEX -> 1
+            Category.NATURE_EXCLUDED -> 2
+            else -> 3
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("「${c.name}」属于哪类支出？")
+            .setSingleChoiceItems(options, current) { dialog, which ->
+                val nature = when (which) {
+                    0 -> Category.NATURE_FIXED
+                    1 -> Category.NATURE_FLEX
+                    2 -> Category.NATURE_EXCLUDED
+                    else -> Category.NATURE_NONE
+                }
+                dialog.dismiss()
+                lifecycleScope.launch {
+                    db.categoryDao().update(c.copy(nature = nature))
+                    c.nature = nature
+                    renderNatureTag(tag, nature)
+                    if (nature == Category.NATURE_EXCLUDED) {
+                        Toast.makeText(
+                            this@BudgetActivity,
+                            "「${c.name}」已不计入收支统计",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun numberInput(value: Double): EditText = EditText(this).apply {

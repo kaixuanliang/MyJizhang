@@ -88,41 +88,7 @@
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="导出 Excel（兼容一飞记账格式）"
-                        android:textSize="12sp" android:textColor="@color/text_secondary" />
-                </LinearLayout>
-                <TextView
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="›" android:textSize="22sp" android:textColor="@color/text_secondary" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent" android:layout_height="1dp"
-                android:layout_marginStart="72dp" android:background="@color/divider" />
-
-            <LinearLayout
-                android:id="@+id/row_import_wizard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp">
-                <TextView
-                    android:layout_width="44dp" android:layout_height="44dp"
-                    android:gravity="center" android:textSize="20sp"
-                    android:text="🧭" android:background="@drawable/bg_icon_blue" />
-                <LinearLayout
-                    android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:layout_marginStart="12dp"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="导入迁移向导" android:textSize="15sp" android:textColor="@color/text_primary" />
-                    <TextView
-                        android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="填真实余额、整理分类，把旧账彻底搬过来（推荐）"
+                        android:text="导出全部账本、全部时间的 Excel"
                         android:textSize="12sp" android:textColor="@color/text_secondary" />
                 </LinearLayout>
                 <TextView
@@ -156,7 +122,7 @@
                     <TextView
                         android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="支持一飞记账导出的 xlsx 账单"
+                        android:text="支持 xlsx 账单导入"
                         android:textSize="12sp" android:textColor="@color/text_secondary" />
                 </LinearLayout>
                 <TextView
@@ -241,7 +207,7 @@
             android:background="@drawable/bg_card">
 
             <LinearLayout
-                android:id="@+id/row_book_edit"
+                android:id="@+id/row_clear_book"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -251,12 +217,20 @@
                 <TextView
                     android:layout_width="44dp" android:layout_height="44dp"
                     android:gravity="center" android:textSize="20sp"
-                    android:text="✏️" android:background="@drawable/bg_icon_purple" />
-                <TextView
+                    android:text="🧹" android:background="@drawable/bg_icon_orange" />
+                <LinearLayout
                     android:layout_width="0dp" android:layout_height="wrap_content"
                     android:layout_weight="1" android:layout_marginStart="12dp"
-                    android:text="修改账本信息"
-                    android:textSize="15sp" android:textColor="@color/text_primary" />
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="清空当前账本" android:textSize="15sp" android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="删除当前账本的全部记录，账户余额归零"
+                        android:textSize="12sp" android:textColor="@color/text_secondary" />
+                </LinearLayout>
                 <TextView
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="›" android:textSize="22sp" android:textColor="@color/text_secondary" />

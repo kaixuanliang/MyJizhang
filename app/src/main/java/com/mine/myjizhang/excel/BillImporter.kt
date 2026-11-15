@@ -31,8 +31,8 @@ data class ImportResult(
 )
 
 /**
- * 一飞记账 xlsx 导入器。
- * 兼容其导出的三个 sheet：支出 / 收入 / 转账，表头按名称匹配，列顺序无关。
+ * xlsx 账单导入器。
+ * 支持三个 sheet：支出 / 收入 / 转账，表头按名称匹配，列顺序无关。
  */
 object BillImporter {
 
@@ -257,21 +257,34 @@ object BillImporter {
         fun cell(row: List<String?>, key: String): String? =
             map[key]?.let { row.getOrNull(it) }?.trim()?.takeIf { it.isNotEmpty() }
 
+        // 旧版导出把金额取了绝对值（负号丢失），信贷账户的欠款会变成正数。
+        // 这里判断文件是否属于旧格式：所有信贷账户余额都 >= 0 且没有负数出现 → 视为旧格式，欠款还原成负数。
+        val legacyUnsigned = rows.drop(1).none { r ->
+            val n = cell(r, "账户名称")
+            if (n == null) false else {
+                val t = cell(r, "账户类型") ?: AssetTypes.match(n).name
+                val b = Money.parse(cell(r, "当前余额")) ?: 0.0
+                AssetTypes.isCredit(t) && b < 0
+            }
+        }
+
         for (r in 1 until rows.size) {
             val row = rows[r]
             val name = cell(row, "账户名称") ?: continue
             val bookName = cell(row, "所属账本") ?: "默认账本"
             val bookId = ensureBook(db, bookName, result)
             val typeName = cell(row, "账户类型") ?: AssetTypes.match(name).name
-            val balance = Money.parse(cell(row, "当前余额")) ?: 0.0
+            val credit = AssetTypes.isCredit(typeName)
+            val rawBalance = Money.parse(cell(row, "当前余额")) ?: 0.0
+            val balance = if (credit && legacyUnsigned && rawBalance > 0) -rawBalance else rawBalance
             val inTotal = cell(row, "计入净资产") != "否"
             val quota = Money.parse(cell(row, "总额度")) ?: 0.0
             val chargeOff = cell(row, "出账日")?.toIntOrNull() ?: 1
             val repay = cell(row, "还款日")?.toIntOrNull() ?: 10
             val remark = cell(row, "备注") ?: ""
-            val opening = Money.parse(cell(row, "期初余额")) ?: 0.0
+            val rawOpening = Money.parse(cell(row, "期初余额")) ?: 0.0
+            val opening = if (credit && legacyUnsigned && rawOpening > 0) -rawOpening else rawOpening
 
-            val credit = AssetTypes.isCredit(typeName)
             val list = db.assetDao().getByBook(bookId)
             val existing = list.firstOrNull { it.name == name }
             if (existing == null) {

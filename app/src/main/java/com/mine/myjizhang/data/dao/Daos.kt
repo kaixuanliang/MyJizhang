@@ -74,6 +74,12 @@ interface AssetDao {
     @Query("SELECT * FROM Asset WHERE bookId = :bookId ORDER BY positionWeight")
     suspend fun getByBook(bookId: String): List<Asset>
 
+    @Query("SELECT COUNT(*) FROM Asset WHERE bookId = :bookId")
+    suspend fun countByBook(bookId: String): Int
+
+    @Query("UPDATE Asset SET amount = 0, openingBalance = 0 WHERE bookId = :bookId")
+    suspend fun resetBalanceByBook(bookId: String)
+
     @Query("SELECT * FROM Asset WHERE id = :id")
     suspend fun getById(id: String): Asset?
 
@@ -126,6 +132,9 @@ interface BillDao {
     @Query("SELECT COUNT(*) FROM Bill")
     suspend fun count(): Int
 
+    @Query("SELECT COUNT(*) FROM Bill WHERE bookId = :bookId")
+    suspend fun countByBook(bookId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(bill: Bill)
 
@@ -143,6 +152,10 @@ interface BillDao {
 
     @Query("DELETE FROM Bill WHERE bookId = :bookId")
     suspend fun deleteByBook(bookId: String)
+
+    /** 分类合并用：把挂在旧分类上的账单改挂到保留分类 */
+    @Query("UPDATE Bill SET categoryId = :to WHERE categoryId = :from")
+    suspend fun remapCategory(from: String, to: String)
 }
 
 @Dao
@@ -167,6 +180,9 @@ interface LoanDao {
 
     @Query("DELETE FROM Loan WHERE bookId = :bookId AND imported = 1")
     suspend fun deleteImportedByBook(bookId: String)
+
+    @Query("DELETE FROM Loan WHERE bookId = :bookId")
+    suspend fun deleteByBook(bookId: String)
 }
 
 @Dao
@@ -179,6 +195,10 @@ interface AdjustDao {
 
     @Query("SELECT * FROM Adjust WHERE bookId = :bookId AND assetId = :assetId ORDER BY time DESC")
     suspend fun getByAsset(bookId: String, assetId: String): List<Adjust>
+
+    /** 某个业务对象（如一笔借款）写下的全部余额调整，撤销时按它精确回退 */
+    @Query("SELECT * FROM Adjust WHERE refType = :refType AND refId = :refId AND kind = :kind ORDER BY time")
+    suspend fun getByRef(refType: String, refId: String, kind: Int): List<Adjust>
 
     @Query("SELECT * FROM Adjust ORDER BY time DESC")
     suspend fun getAll(): List<Adjust>
@@ -218,4 +238,11 @@ interface BudgetDao {
 
     @Query("DELETE FROM Budget WHERE bookId = :bookId AND categoryId = :categoryId AND month = :month")
     suspend fun deleteOne(bookId: String, categoryId: String, month: String)
+
+    @Query("DELETE FROM Budget WHERE bookId = :bookId")
+    suspend fun deleteByBook(bookId: String)
+
+    /** 分类合并用：把旧分类的预算改挂到保留分类 */
+    @Query("UPDATE Budget SET categoryId = :to WHERE categoryId = :from")
+    suspend fun remapCategory(from: String, to: String)
 }

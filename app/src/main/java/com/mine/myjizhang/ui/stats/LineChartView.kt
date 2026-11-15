@@ -15,7 +15,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 资产走势图（自研折线 + 渐变面积图，参考一飞记账样式）
+ * 资产走势图（自研折线 + 渐变面积图，参考主流记账 App 样式）
  * 输入：按天索引的累计结余数组，index 0 = 1 号
  */
 class LineChartView @JvmOverloads constructor(

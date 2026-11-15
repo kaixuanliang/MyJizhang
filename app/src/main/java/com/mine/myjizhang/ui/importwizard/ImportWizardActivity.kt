@@ -31,7 +31,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * 导入迁移向导：把「一飞记账的旧账」一次性迁移成自己的账。
+ * 导入迁移向导：把旧账一次性迁移成自己的账。
  *
  *  1 体检     —— 先看清数据长什么样（账单数、时间跨度、账户、分类、异常行）
  *  2 账户认领 —— 每个账户填今天的真实余额，反推期初余额，把账一次性对平
@@ -103,7 +103,7 @@ class ImportWizardActivity : AppCompatActivity() {
             }
             btnNext.isEnabled = true
             if (parsed == null) {
-                Toast.makeText(this@ImportWizardActivity, "文件解析失败，请确认是一飞记账导出的 xlsx", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@ImportWizardActivity, "文件解析失败，请确认是导出的 xlsx 账单文件", Toast.LENGTH_LONG).show()
                 finish()
                 return@launch
             }
@@ -113,6 +113,7 @@ class ImportWizardActivity : AppCompatActivity() {
                 finish()
                 return@launch
             }
+            primeNatures(parsed)
             render()
         }
     }
@@ -444,6 +445,19 @@ class ImportWizardActivity : AppCompatActivity() {
     }
 
     // ---------------- 分类落库 ----------------
+
+    /**
+     * 扫描出来的分类一律默认「弹性支出」，如果直接落库，
+     * 用户之前在「预算与分类」里标好的「固定支出」会被全部冲成弹性，
+     * 统计页的固定支出就又变回 0。这里先用库里已有的性质覆盖扫描结果。
+     */
+    private suspend fun primeNatures(p: ImportPreview) {
+        val existing = db.categoryDao().getAll().associateBy { it.type to it.name }
+        for (c in p.categories) {
+            val old = existing[c.type to c.name] ?: continue
+            if (old.nature != Category.NATURE_NONE) c.nature = old.nature
+        }
+    }
 
     private suspend fun applyCategories(p: ImportPreview) {
         for (c in p.categories) {

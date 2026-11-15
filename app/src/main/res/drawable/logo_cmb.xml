@@ -1,7 +1,0 @@
-<!-- 招商银行：红底白色「M」花标 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="42dp" android:height="42dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#D20A2C" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M32,74 V40 L54,60 L76,40 V74" />
-</vector>

@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.ChipGroup
 import com.mine.myjizhang.R
+import com.mine.myjizhang.ui.TabRefreshable
 import com.mine.myjizhang.data.AppDatabase
 import com.mine.myjizhang.data.Finance
 import com.mine.myjizhang.data.Pref
@@ -23,7 +24,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class StatsFragment : Fragment() {
+class StatsFragment : Fragment(), TabRefreshable {
 
     private val db by lazy { AppDatabase.get(requireContext()) }
     private val adapter = StatAdapter()
@@ -34,6 +35,12 @@ class StatsFragment : Fragment() {
     private var collectJob: Job? = null
 
     private var categories: List<Category> = emptyList()
+
+    /** 固定 / 弹性支出的分类明细，点数字时弹出来解释「这个数是怎么算的」 */
+    private data class NatureRow(val name: String, val amount: Double, val count: Int)
+    private var fixedRows: List<NatureRow> = emptyList()
+    private var flexRows: List<NatureRow> = emptyList()
+    private var fixedCatCount: Int = 0
 
     private lateinit var textMonth: TextView
     private lateinit var pie: PieChartView
@@ -61,6 +68,17 @@ class StatsFragment : Fragment() {
                 android.content.Intent(requireContext(), com.mine.myjizhang.ui.budget.BudgetActivity::class.java)
             )
         }
+        // 财务健康里的「固定 / 弹性」来源提示，点一下也进预算与分类页
+        view.findViewById<View>(R.id.hp_nature_hint).setOnClickListener {
+            startActivity(
+                android.content.Intent(requireContext(), com.mine.myjizhang.ui.budget.BudgetActivity::class.java)
+            )
+        }
+        // 点数字看明细：很多情况下「固定支出 0.00」不是没生效，而是本月这部分分类没花钱
+        view.findViewById<View>(R.id.hp_fixed).setOnClickListener { showNatureDetail(true) }
+        view.findViewById<View>(R.id.hp_fixed_pct).setOnClickListener { showNatureDetail(true) }
+        view.findViewById<View>(R.id.hp_flex).setOnClickListener { showNatureDetail(false) }
+        view.findViewById<View>(R.id.hp_flex_pct).setOnClickListener { showNatureDetail(false) }
         view.findViewById<ChipGroup>(R.id.chip_group).setOnCheckedStateChangeListener { _, _ ->
             type = if (view.findViewById<ChipGroup>(R.id.chip_group).checkedChipId == R.id.chip_income) 1 else 0
             refresh()
@@ -80,6 +98,8 @@ class StatsFragment : Fragment() {
         year = y; month = m
         refresh()
     }
+
+    override fun refreshTab() = refresh()
 
     fun refresh() {
         textMonth.text = "${year}年${month}月"
@@ -152,12 +172,36 @@ class StatsFragment : Fragment() {
             )
         )
 
-        val fixed = counted.filter { Finance.isFixed(it, catById[it.categoryId]) }
-            .sumOf { Finance.netExpense(it) }
-        val flex = counted.filter { Finance.isFlex(it, catById[it.categoryId]) }
-            .sumOf { Finance.netExpense(it) }
+        // 固定 / 弹性 = 「分类性质」为固定（或其余）的分类，在本月实际花掉的钱
+        val fixedBills = counted.filter { Finance.isFixed(it, catById[it.categoryId]) }
+        val flexBills = counted.filter { Finance.isFlex(it, catById[it.categoryId]) }
+        val fixed = fixedBills.sumOf { Finance.netExpense(it) }
+        val flex = flexBills.sumOf { Finance.netExpense(it) }
+        fixedRows = groupRows(fixedBills, catById)
+        flexRows = groupRows(flexBills, catById)
+        fixedCatCount = categories.count {
+            it.type == 0 && !it.hide && it.nature == Category.NATURE_FIXED
+        }
+
         v.findViewById<TextView>(R.id.hp_fixed).text = Money.fmt(fixed)
         v.findViewById<TextView>(R.id.hp_flex).text = Money.fmt(flex)
+
+        // 固定 / 弹性各占支出的多少：只有金额看不出结构，加个占比一眼就知道刚性支出重不重
+        val splitBase = fixed + flex
+        fun pct(part: Double, count: Int): String =
+            if (splitBase <= 0) "占 --"
+            else String.format("占 %.0f%% · %d 笔", part / splitBase * 100, count)
+        v.findViewById<TextView>(R.id.hp_fixed_pct).text = pct(fixed, fixedBills.size)
+        v.findViewById<TextView>(R.id.hp_flex_pct).text = pct(flex, flexBills.size)
+        // 0.00 的时候要说清「为什么是 0」，不然会以为标记没生效
+        v.findViewById<TextView>(R.id.hp_nature_hint).text = when {
+            fixedCatCount == 0 ->
+                "还没有把分类标成「固定支出」，点这里去标记 ›"
+            fixed <= 0.0 ->
+                "已标记「固定」的分类本月还没支出（共 $fixedCatCount 个），点数字看明细 ›"
+            else ->
+                "固定 = 已标记分类的本月实际支出，与预算金额无关，点数字看明细 ›"
+        }
 
         val bar = v.findViewById<android.widget.ProgressBar>(R.id.hp_budget_bar)
         val label = v.findViewById<TextView>(R.id.hp_budget_label)
@@ -179,6 +223,61 @@ class StatsFragment : Fragment() {
                 requireContext().getColor(if (pct > 100) R.color.expense_red else R.color.text_secondary)
             )
         }
+    }
+
+    /** 按分类汇总（金额降序），用于「固定 / 弹性」的明细弹窗 */
+    private fun groupRows(bills: List<Bill>, catById: Map<String, Category>): List<NatureRow> =
+        bills.groupBy { it.categoryId }
+            .map { (id, list) ->
+                NatureRow(
+                    catById[id]?.name ?: "已删除分类",
+                    list.sumOf { Finance.netExpense(it) },
+                    list.size
+                )
+            }
+            .filter { it.amount > 0 }
+            .sortedByDescending { it.amount }
+
+    private fun showNatureDetail(fixed: Boolean) {
+        val rows = if (fixed) fixedRows else flexRows
+        val total = rows.sumOf { it.amount }
+        val sb = StringBuilder()
+        if (fixed) {
+            sb.append("只统计「分类性质 = 固定支出」的账单在本月的实际金额。\n")
+            sb.append("标记只是给分类打标签，不会产生金额；预算金额是上限，不计入这里。\n\n")
+        } else {
+            sb.append("本月除固定支出以外的支出都算弹性（含还没标记性质的分类）。\n\n")
+        }
+        if (rows.isEmpty()) {
+            sb.append("本月这部分还没有支出。")
+            if (fixed) {
+                sb.append("\n\n已标记为固定的分类：")
+                sb.append(
+                    categories.filter { it.type == 0 && it.nature == Category.NATURE_FIXED }
+                        .joinToString("、") { it.name }
+                        .ifBlank { "（还没有）" }
+                )
+            }
+        } else {
+            rows.take(12).forEach {
+                sb.append("${it.name}　¥${Money.fmt(it.amount)}（${it.count} 笔）\n")
+            }
+            if (rows.size > 12) sb.append("… 还有 ${rows.size - 12} 个分类\n")
+            sb.append("\n合计 ¥${Money.fmt(total)}")
+        }
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(if (fixed) "固定支出明细" else "弹性支出明细")
+            .setMessage(sb.toString())
+            .setPositiveButton("知道了", null)
+            .setNegativeButton("去标记分类") { _, _ ->
+                startActivity(
+                    android.content.Intent(
+                        requireContext(),
+                        com.mine.myjizhang.ui.budget.BudgetActivity::class.java
+                    )
+                )
+            }
+            .show()
     }
 
     /** 资产走势图（当月累计结余） + 收支统计图（每日支出/收入） */
@@ -220,7 +319,8 @@ class StatsFragment : Fragment() {
             }
             .sortedByDescending { it.second }
         val total = byCat.sumOf { it.second }
-        val top = byCat.take(8)
+        // 饼图只放前 6 名 + 其他：块太多引线标签会挤，完整排行在下方列表里
+        val top = byCat.take(6)
         val slices = top.mapIndexed { i, (id, amount) ->
             PieChartView.Slice(
                 catById[id]?.name ?: "未知",
@@ -228,9 +328,9 @@ class StatsFragment : Fragment() {
                 PieChartView.PALETTE[i % PieChartView.PALETTE.size]
             )
         }
-        val finalSlices = if (byCat.size > 8) {
-            val rest = byCat.drop(8).sumOf { it.second }
-            slices + PieChartView.Slice("其他", rest, PieChartView.PALETTE[7])
+        val finalSlices = if (byCat.size > 6) {
+            val rest = byCat.drop(6).sumOf { it.second }
+            slices + PieChartView.Slice("其他 ${byCat.size - 6} 项", rest, PieChartView.PALETTE[7])
         } else slices
         pie.setData(finalSlices, "¥" + Money.fmt(total))
         adapter.submit(byCat.map { (id, amount) ->

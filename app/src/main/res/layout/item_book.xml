@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_card"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="14dp"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:id="@+id/text_check"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:gravity="center"
+        android:text="✓"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary"
+        android:background="@drawable/bg_icon_circle" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/text_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="个人账本"
+            android:textSize="15sp"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/text_meta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="0 笔账单 · 0 个账户"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/btn_more"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:text="⋯"
+        android:textSize="20sp"
+        android:textColor="@color/text_secondary"
+        android:contentDescription="重命名或删除" />
+</LinearLayout>

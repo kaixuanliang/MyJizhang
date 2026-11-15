@@ -8,106 +8,319 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="8dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="仓库（格式 owner/repo）"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
-        <EditText
-            android:id="@+id/input_repo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="myname/my-backup-repo"
-            android:inputType="text"
-            android:singleLine="true" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="分支"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
-        <EditText
-            android:id="@+id/input_branch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="main"
-            android:inputType="text"
-            android:singleLine="true" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Personal Access Token（需要该仓库 Contents 读写权限）"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
-        <EditText
-            android:id="@+id/input_token"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="github_pat_…"
-            android:inputType="textPassword"
-            android:singleLine="true" />
-
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switch_encrypt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="加密上传（AES-256，仓库里只有密文）" />
-
-        <EditText
-            android:id="@+id/input_password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="加密密码（恢复时需输入同一密码）"
-            android:inputType="textPassword"
-            android:singleLine="true"
-            android:visibility="gone" />
-
+        <!-- ============ 未配置：填写仓库信息 ============ -->
         <LinearLayout
+            android:id="@+id/section_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="12dp">
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="还没有配置备份仓库。填好下面的信息后点「保存配置」，之后就能一键同步。"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="仓库（格式 owner/repo）"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <EditText
+                android:id="@+id/input_repo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="myname/my-backup-repo"
+                android:inputType="text"
+                android:singleLine="true" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="分支"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <EditText
+                android:id="@+id/input_branch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="main"
+                android:inputType="text"
+                android:singleLine="true" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Personal Access Token（需要该仓库 Contents 读写权限）"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <EditText
+                android:id="@+id/input_token"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="github_pat_…"
+                android:inputType="textPassword"
+                android:singleLine="true" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_encrypt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="加密上传（AES-256，仓库里只有密文）" />
+
+            <EditText
+                android:id="@+id/input_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="加密密码（恢复时需输入同一密码）"
+                android:inputType="textPassword"
+                android:singleLine="true"
+                android:visibility="gone" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:background="@color/divider" />
+
+            <!-- 自动同步间隔 -->
+            <LinearLayout
+                android:id="@+id/row_auto_config"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="自动同步"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_auto_config_value"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="关闭"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textSize="22sp"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_auto_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp"
+                android:visibility="gone"
+                android:textColor="@color/text_secondary" />
+
+            <Button
+                android:id="@+id/btn_battery"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="允许后台运行（避免被系统掐断）"
+                android:textSize="12sp"
+                android:textColor="@color/primary" />
+
+            <TextView
+                android:id="@+id/text_config_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/text_secondary" />
+
+            <Button
+                android:id="@+id/btn_save"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="保存配置" />
 
             <Button
                 android:id="@+id/btn_test"
                 style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="4dp"
                 android:text="测试连接" />
-
-            <Button
-                android:id="@+id/btn_upload"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="上传备份" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_restore"
-            style="?attr/materialButtonOutlinedStyle"
+        <!-- ============ 已配置：一键同步 ============ -->
+        <LinearLayout
+            android:id="@+id/section_ready"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="从仓库恢复（覆盖本地）" />
+            android:orientation="vertical"
+            android:visibility="gone">
 
-        <TextView
-            android:id="@+id/text_sync_hint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_blue_tint"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="☁️"
+                    android:textSize="20sp"
+                    android:background="@drawable/bg_icon_blue" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/text_repo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="middle"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_repo_meta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_last_sync"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <Button
+                android:id="@+id/btn_sync"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="同步" />
+
+            <Button
+                android:id="@+id/btn_restore"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="从仓库恢复（覆盖本地）" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:background="@color/divider" />
+
+            <LinearLayout
+                android:id="@+id/row_auto_ready"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/text_auto_ready"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/text_auto_ready_state"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textSize="22sp"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_battery_ready"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="允许后台运行（避免被系统掐断）"
+                android:textSize="12sp"
+                android:textColor="@color/primary" />
+
+            <Button
+                android:id="@+id/btn_edit_config"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="修改配置"
+                android:textColor="@color/text_secondary" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

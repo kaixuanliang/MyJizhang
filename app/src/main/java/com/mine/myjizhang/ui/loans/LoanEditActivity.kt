@@ -233,8 +233,10 @@ class LoanEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val old = editingId?.let { db.loanDao().getById(it) }
             // 撤销旧记录对余额的影响（未还清的才影响余额）
+            // 注意只回退「未还部分」：已经还掉的钱当初就已经从余额里减过/加过了，
+            // 若按全额回退，部分还款的记录一改就会凭空多出一笔钱。
             if (old != null && !old.repaid) {
-                applyBalance(old.assetId, old.direction, old.amount, addBack = true)
+                applyBalance(old.assetId, old.direction, old.outstanding, addBack = true)
             }
             val loan = old ?: Loan(
                 id = AppDatabase.newId(),
@@ -252,9 +254,14 @@ class LoanEditActivity : AppCompatActivity() {
             loan.assetId = assetId
             loan.photoPath = photoPath
             loan.direction = direction
+            // 金额被改小到低于已还金额时，把已还金额夹到上限，避免出现「已还 > 借入」
+            if (loan.repaidAmount > loan.amount) loan.repaidAmount = loan.amount
+            loan.repaid = loan.repaidAmount >= loan.amount - 0.005
             db.loanDao().insert(loan)
-            // 应用新记录对余额的影响
-            applyBalance(loan.assetId, loan.direction, loan.amount, addBack = false)
+            // 应用新记录对余额的影响：只算还没还的那部分
+            if (!loan.repaid) {
+                applyBalance(loan.assetId, loan.direction, loan.outstanding, addBack = false)
+            }
             Toast.makeText(this@LoanEditActivity, "已保存", Toast.LENGTH_SHORT).show()
             finish()
         }

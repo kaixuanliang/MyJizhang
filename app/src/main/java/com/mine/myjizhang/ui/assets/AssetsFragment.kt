@@ -7,14 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.mine.myjizhang.R
+import com.mine.myjizhang.ui.widget.SheetList
+import com.mine.myjizhang.ui.TabRefreshable
 import com.mine.myjizhang.data.AppDatabase
 import com.mine.myjizhang.data.Pref
 import com.mine.myjizhang.data.entity.Asset
@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class AssetsFragment : Fragment() {
+class AssetsFragment : Fragment(), TabRefreshable {
 
     private val db by lazy { AppDatabase.get(requireContext()) }
     private val adapter = AssetAdapter(
@@ -79,6 +79,8 @@ class AssetsFragment : Fragment() {
         refresh()
     }
 
+    override fun refreshTab() = refresh()
+
     fun refresh() {
         collectJob?.cancel()
         collectJob = lifecycleScope.launch {
@@ -93,18 +95,25 @@ class AssetsFragment : Fragment() {
                 // 财务口径：
                 //   可支配 / 投资 = 正余额账户按分组拆分
                 //   应收借出 = 尚未收回的借出（钱借出去了，债权还在，不是损失）
-                //   负债 = 账户负余额（信用卡等） + 尚未归还的借入
+                //   负债 = 信贷账户欠款（信用卡/花呗等，即使关掉「计入净资产」也必须扣） + 其他账户负余额 + 未还借入
                 // 净资产 = 可支配 + 投资 + 应收借出 − 负债
-                val inTotal = list.filter { it.inTotalAsset }
+                val groupOf = { a: Asset -> AssetTypes.groupOf(a.subType, a.type, a.name) }
+                // 信贷账户单独拎出来：它代表欠款，不能因为「计入总资产」开关为 false 就从净资产里消失
+                val creditAssets = list.filter { groupOf(it) == AssetTypes.GROUP_CREDIT }
+                val inTotal = list.filter {
+                    it.inTotalAsset && groupOf(it) != AssetTypes.GROUP_CREDIT
+                }
                 val invest = inTotal.filter {
-                    AssetTypes.groupOf(it.subType, it.type, it.name) == AssetTypes.GROUP_INVEST &&
-                        it.amount > 0
+                    groupOf(it) == AssetTypes.GROUP_INVEST && it.amount > 0
                 }.sumOf { it.amount }
+                // 信贷账户多还出来的正余额也是自己的钱，算进可支配
+                val creditSurplus = creditAssets.sumOf { if (it.amount > 0) it.amount else 0.0 }
                 val cash = inTotal.filter {
-                    AssetTypes.groupOf(it.subType, it.type, it.name) != AssetTypes.GROUP_INVEST &&
-                        it.amount > 0
-                }.sumOf { it.amount }
-                val accountDebt = Math.abs(inTotal.filter { it.amount < 0 }.sumOf { it.amount })
+                    groupOf(it) != AssetTypes.GROUP_INVEST && it.amount > 0
+                }.sumOf { it.amount } + creditSurplus
+                // 信贷账户欠款（amount 为负）+ 其他账户的负余额
+                val creditOwed = creditAssets.sumOf { if (it.amount < 0) -it.amount else 0.0 }
+                val accountDebt = Math.abs(inTotal.filter { it.amount < 0 }.sumOf { it.amount }) + creditOwed
                 val receivable = loans.filter { it.direction == 1 }.sumOf { it.outstanding }
                 val payable = loans.filter { it.direction == 0 }.sumOf { it.outstanding }
                 val debt = accountDebt + payable
@@ -126,17 +135,9 @@ class AssetsFragment : Fragment() {
 
     private fun showTypePicker() {
         val ctx = requireContext()
-        val dialog = BottomSheetDialog(ctx)
-        val content = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(24), dp(20), dp(32))
-        }
-        content.addView(TextView(ctx).apply {
-            text = "请选择资产类型"
-            textSize = 17f
-            setTextColor(ctx.getColor(R.color.text_primary))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-        })
+        // 标题悬浮 + 高度固定，内容在下面滚动
+        val sheet = SheetList.create(ctx, "请选择资产类型", fillHeight = true)
+        val content = sheet.list
 
         for (group in AssetTypes.groups) {
             val items = AssetTypes.all.filter { it.group == group }
@@ -144,7 +145,7 @@ class AssetsFragment : Fragment() {
                 text = group
                 textSize = 13f
                 setTextColor(ctx.getColor(R.color.text_secondary))
-                setPadding(0, dp(20), 0, dp(8))
+                setPadding(0, dp(16), 0, dp(6))
             })
             val grid = GridLayout(ctx).apply { columnCount = 4 }
             items.forEach { info ->
@@ -158,13 +159,13 @@ class AssetsFragment : Fragment() {
                     }
                     setPadding(dp(4), dp(8), dp(4), dp(8))
                     setOnClickListener {
-                        dialog.dismiss()
+                        sheet.dialog.dismiss()
                         onTypeSelected(info)
                     }
                     addView(TextView(ctx).apply {
                         gravity = Gravity.CENTER
                         layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
-                        // 类型图标：优先官方风格 logo，无 logo 则用 emoji 淡色圆底
+                        // 类型图标：优先品牌 logo，无 logo 则用 emoji 淡色圆底
                         AssetTypes.bindIcon(this, info.name, info.name, "")
                     })
                     addView(TextView(ctx).apply {
@@ -179,10 +180,7 @@ class AssetsFragment : Fragment() {
             content.addView(grid)
         }
 
-        // 包进 ScrollView：类型多时（如滑到投资理财账户）可以继续向上滑动
-        val scroll = ScrollView(ctx).apply { addView(content) }
-        dialog.setContentView(scroll)
-        dialog.show()
+        sheet.dialog.show()
     }
 
     private fun onTypeSelected(info: AssetTypeInfo) {
@@ -202,69 +200,31 @@ class AssetsFragment : Fragment() {
 
     private fun showBankPicker(info: AssetTypeInfo) {
         val ctx = requireContext()
-        val dialog = BottomSheetDialog(ctx)
-        val content = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(24), dp(20), dp(32))
-        }
-        content.addView(TextView(ctx).apply {
-            text = "请选择银行（共 ${com.mine.myjizhang.ui.assets.Banks.all.size} 家）"
-            textSize = 17f
-            setTextColor(ctx.getColor(R.color.text_primary))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-        })
-
-        val rows: List<Pair<String, com.mine.myjizhang.ui.assets.Bank?>> =
+        val rows: List<Pair<String, Bank?>> =
             Banks.all.map { it.name to it.bank } + listOf("其他银行（手动输入）" to null)
+
+        // 标题悬浮，列表固定高度内部滚动（248 家银行，列表必然很长）
+        val sheet = SheetList.create(ctx, "请选择银行（共 ${Banks.all.size} 家）", rows.size, 60)
         rows.forEach { (name, bank) ->
-            content.addView(LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(14), 0, dp(14))
-                setOnClickListener {
-                    dialog.dismiss()
-                    if (bank != null) {
-                        AssetEditActivity.startNew(
-                            requireContext(),
-                            subType = info.name,
-                            prefillName = name,
-                            credit = info.credit,
-                            icon = bank.short
-                        )
-                    } else {
-                        AssetEditActivity.startNew(requireContext(), subType = info.name, credit = info.credit)
-                    }
+            val icon = SheetList.iconView(ctx, 40).also { v ->
+                AssetTypes.bindIcon(v, name, info.name, bank?.short ?: "")
+            }
+            sheet.list.addView(SheetList.row(ctx, name, 60, icon) {
+                sheet.dialog.dismiss()
+                if (bank != null) {
+                    AssetEditActivity.startNew(
+                        requireContext(),
+                        subType = info.name,
+                        prefillName = name,
+                        credit = info.credit,
+                        icon = bank.short
+                    )
+                } else {
+                    AssetEditActivity.startNew(requireContext(), subType = info.name, credit = info.credit)
                 }
-                addView(TextView(ctx).apply {
-                    gravity = Gravity.CENTER
-                    layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
-                    // 银行图标：优先官方风格 logo，无 logo 用缩写字圆底
-                    val logoRes = com.mine.myjizhang.ui.assets.BankLogos.res(name)
-                    if (logoRes != 0) {
-                        text = ""
-                        background = androidx.core.content.ContextCompat.getDrawable(ctx, logoRes)
-                    } else {
-                        textSize = if ((bank?.short?.length ?: 0) >= 2) 11f else 16f
-                        text = bank?.short ?: "？"
-                        setTextColor(android.graphics.Color.WHITE)
-                        background = android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.OVAL
-                            setColor(android.graphics.Color.parseColor(bank?.color ?: "#3D9BE9"))
-                        }
-                    }
-                })
-                addView(TextView(ctx).apply {
-                    text = name
-                    textSize = 15f
-                    setTextColor(ctx.getColor(R.color.text_primary))
-                    setPadding(dp(16), 0, 0, 0)
-                })
             })
         }
-
-        val scroll = ScrollView(ctx).apply { addView(content) }
-        dialog.setContentView(scroll)
-        dialog.show()
+        sheet.dialog.show()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()

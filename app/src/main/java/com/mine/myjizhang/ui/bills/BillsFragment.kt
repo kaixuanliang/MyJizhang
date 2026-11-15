@@ -19,6 +19,7 @@ import com.mine.myjizhang.data.Pref
 import com.mine.myjizhang.data.entity.Asset
 import com.mine.myjizhang.data.entity.Bill
 import com.mine.myjizhang.data.entity.Category
+import com.mine.myjizhang.ui.TabRefreshable
 import com.mine.myjizhang.ui.edit.BillEditActivity
 import com.mine.myjizhang.util.DateTimes
 import com.mine.myjizhang.util.Money
@@ -27,7 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class BillsFragment : Fragment() {
+class BillsFragment : Fragment(), TabRefreshable {
 
     private val db by lazy { AppDatabase.get(requireContext()) }
     private val adapter = BillAdapter(
@@ -69,6 +70,11 @@ class BillsFragment : Fragment() {
 
         view.findViewById<View>(R.id.btn_search).setOnClickListener { showSearch() }
 
+        // 右上角账本名 → 账本管理（可切换账本）
+        view.findViewById<View>(R.id.text_book_name).setOnClickListener {
+            com.mine.myjizhang.ui.books.BookManageActivity.start(requireContext())
+        }
+
         // 左滑删除账单（红色底 + 「删除」）
         attachSwipeDelete(rv)
     }
@@ -99,10 +105,15 @@ class BillsFragment : Fragment() {
                 target: RecyclerView.ViewHolder
             ): Boolean = false
 
+            // 滑到三分之一就算触发，不用一路拖到底
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float = 0.32f
+
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val pos = viewHolder.bindingAdapterPosition
                 val row = adapter.rows.getOrNull(pos)
-                if (row is Row.BillRow) swipeDelete(row.bill) else adapter.notifyDataSetChanged()
+                // 先让条目滑回原位，再弹确认框：用户点「取消」时列表要是干净的
+                rv.post { adapter.notifyItemChanged(pos) }
+                if (row is Row.BillRow) confirmDelete(row.bill) else adapter.notifyDataSetChanged()
             }
 
             override fun onChildDraw(
@@ -135,29 +146,18 @@ class BillsFragment : Fragment() {
         helper.attachToRecyclerView(rv)
     }
 
-    /** 左滑删除：冲正余额 + 写对账备忘 + 可撤销 */
-    private fun swipeDelete(bill: Bill) {
-        val ctx = requireContext()
+    /** 删除账单：冲正余额 + 写对账备忘（确认弹窗后才会走到这里） */
+    private fun doDelete(bill: Bill) {
         lifecycleScope.launch {
             com.mine.myjizhang.data.Reconcile.reverseBill(
                 db, bill, com.mine.myjizhang.data.entity.Adjust.KIND_BILL_DELETE,
-                "左滑删除账单：冲正 ¥${Money.fmt(bill.amount)}"
+                "删除账单：冲正 ¥${Money.fmt(bill.amount)}"
             )
             db.billDao().delete(bill)
             refresh()
             val root = view ?: return@launch
             com.google.android.material.snackbar.Snackbar
-                .make(root, "已删除 1 笔账单", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
-                .setAction("撤销") {
-                    lifecycleScope.launch {
-                        db.billDao().insert(bill)
-                        com.mine.myjizhang.data.Reconcile.applyBill(
-                            db, bill, com.mine.myjizhang.data.entity.Adjust.KIND_BILL_RESTORE,
-                            "撤销删除：恢复 ¥${Money.fmt(bill.amount)}"
-                        )
-                        refresh()
-                    }
-                }
+                .make(root, "已删除 1 笔账单", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
                 .show()
         }
     }
@@ -269,6 +269,27 @@ class BillsFragment : Fragment() {
             val nameMap = assets.associate { it.id to it.name }
             adapter.assetName = { id -> nameMap[id] ?: "已删除账户" }
 
+            // 分类同理：导入时新分类要立刻显示名字，而不是空白
+            launch {
+                db.categoryDao().observeAll().collectLatest { list ->
+                    categories = list
+                    adapter.categoryName = { id -> list.firstOrNull { it.id == id }?.name ?: "" }
+                    adapter.categoryIcon = { id -> list.firstOrNull { it.id == id }?.icon ?: "💡" }
+                    adapter.notifyDataSetChanged()
+                }
+            }
+
+            // 账户名要跟着数据库走：导入账单会同时新建账户，若只在进页面时取一次快照，
+            // 新账单会因为查不到账户名而显示「已删除账户」，退出重进才恢复。
+            launch {
+                db.assetDao().observeByBook(bookId).collectLatest { list ->
+                    assets = list
+                    val map = list.associate { it.id to it.name }
+                    adapter.assetName = { id -> map[id] ?: "已删除账户" }
+                    adapter.notifyDataSetChanged()
+                }
+            }
+
             val start = DateTimes.monthStart(year, month)
             val end = DateTimes.monthEnd(year, month)
             db.billDao().observeByMonth(bookId, start, end).collectLatest { bills ->
@@ -279,7 +300,9 @@ class BillsFragment : Fragment() {
         }
     }
 
-    /** 顶部蓝色月度总览卡（对照一飞记账）：月支出大字 + 月收入/月结余 */
+    override fun refreshTab() = refresh()
+
+    /** 顶部蓝色月度总览卡（月度总览）：月支出大字 + 月收入/月结余 */
     private fun bindOverview(bills: List<Bill>) {
         val v = view ?: return
         val pay = bills.filter { it.type == 0 }.sumOf { com.mine.myjizhang.data.Finance.netExpense(it) } +
@@ -289,7 +312,8 @@ class BillsFragment : Fragment() {
 
         v.findViewById<TextView>(R.id.text_month_title).text =
             "${year % 100}年${month}月账单 ▼"
-        v.findViewById<TextView>(R.id.text_book_name).text = bookName
+        v.findViewById<TextView>(R.id.text_book_name).text =
+            if (bookName.isBlank()) "" else "$bookName ▾"
 
         v.findViewById<TextView>(R.id.text_overview_label).text = "${month}月支出"
         v.findViewById<TextView>(R.id.text_overview_amount).text = Money.fmt(pay)
@@ -312,10 +336,17 @@ class BillsFragment : Fragment() {
     }
 
     private fun confirmDelete(bill: Bill) {
+        if (view == null) return
+        val cat = categories.firstOrNull { it.id == bill.categoryId }?.name ?: "转账"
+        val sign = if (bill.type == 1) "+" else "-"
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("删除账单")
-            .setMessage("确定删除这笔账单吗？金额 ¥${Money.fmt(bill.amount)}")
-            .setPositiveButton("删除") { _, _ -> swipeDelete(bill) }
+            .setTitle("确认删除")
+            .setMessage(
+                "分类：$cat\n日期：${DateTimes.format(bill.time)}\n" +
+                    "金额：$sign¥${Money.fmt(bill.amount)}\n\n" +
+                    "删除后这笔账单对账户余额的影响会一并冲正，且无法撤销。"
+            )
+            .setPositiveButton("删除") { _, _ -> doDelete(bill) }
             .setNegativeButton("取消", null)
             .show()
     }

@@ -1,6 +1,8 @@
 package com.mine.myjizhang.ui.settings
 
 import android.app.Activity
+import android.content.Intent
+import android.provider.Settings
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -20,30 +22,27 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.mine.myjizhang.R
 import com.mine.myjizhang.data.AppDatabase
+import com.mine.myjizhang.data.DataBus
 import com.mine.myjizhang.data.Pref
 import com.mine.myjizhang.data.entity.AccountBook
 import com.mine.myjizhang.excel.BillExporter
 import com.mine.myjizhang.excel.BillImporter
 import com.mine.myjizhang.excel.XlsxWriter
+import com.mine.myjizhang.ui.TabRefreshable
 import com.mine.myjizhang.sync.GitHubSyncer
+import com.mine.myjizhang.sync.SyncScheduler
 import com.mine.myjizhang.sync.SyncConfig
 import com.mine.myjizhang.sync.SyncResult
-import com.mine.myjizhang.util.DateTimes
-import com.mine.myjizhang.util.Money
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Locale
 
-class SettingsFragment : Fragment() {
+class SettingsFragment : Fragment(), TabRefreshable {
 
     private val db by lazy { AppDatabase.get(requireContext()) }
-
-    private var exportBookId: String? = null   // null=全部账本
-    private var exportRange: Int = 0           // 0全部 1本月 2今年
 
     // 导出：让用户选择保存位置
     private val exportLauncher = registerForActivityResult(
@@ -55,37 +54,29 @@ class SettingsFragment : Fragment() {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) doImport(uri) }
 
-    // 导入迁移向导：同一个选文件入口，但走四步迁移流程
-    private val wizardLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            com.mine.myjizhang.ui.importwizard.ImportWizardActivity.start(requireContext(), uri)
-        }
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View = inflater.inflate(R.layout.fragment_settings, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        view.findViewById<View>(R.id.row_book).setOnClickListener { manageBooks() }
-        view.findViewById<View>(R.id.row_book_edit).setOnClickListener { renameOrDeleteBook() }
-        view.findViewById<View>(R.id.row_export).setOnClickListener { showExportDialog() }
+        view.findViewById<View>(R.id.row_book).setOnClickListener { openBookManage() }
+        view.findViewById<View>(R.id.row_clear_book).setOnClickListener { confirmClearBook() }
+        view.findViewById<View>(R.id.row_export).setOnClickListener { startExport() }
         view.findViewById<View>(R.id.row_import).setOnClickListener {
             importLauncher.launch(arrayOf(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "application/octet-stream"
             ))
         }
-        view.findViewById<View>(R.id.row_import_wizard).setOnClickListener {
-            wizardLauncher.launch(arrayOf(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "application/octet-stream"
-            ))
-        }
         view.findViewById<View>(R.id.row_sync).setOnClickListener { showSyncDialog() }
-        view.findViewById<View>(R.id.row_adjust).setOnClickListener { showAdjustLog() }
+        view.findViewById<View>(R.id.row_adjust).setOnClickListener {
+            startActivity(
+                android.content.Intent(
+                    requireContext(),
+                    com.mine.myjizhang.ui.reconcile.ReconcileLogActivity::class.java
+                )
+            )
+        }
         view.findViewById<View>(R.id.row_about).setOnClickListener { showAbout() }
     }
 
@@ -95,14 +86,21 @@ class SettingsFragment : Fragment() {
         updateSyncLabel()
     }
 
+    override fun refreshTab() {
+        updateCurrentBookLabel()
+        updateSyncLabel()
+    }
+
     private fun updateSyncLabel() {
         lifecycleScope.launch {
             val cfg = Pref.syncConfig(requireContext())
-            view?.findViewById<TextView>(R.id.text_sync_state)?.text = if (cfg.lastSyncTime > 0) {
-                "上次${cfg.lastSyncAction}：" +
-                    SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(java.util.Date(cfg.lastSyncTime))
-            } else {
-                "GitHub 仓库加密备份"
+            val auto = if (cfg.autoSyncDays > 0) " · ${Pref.autoSyncLabel(cfg.autoSyncDays)}自动同步" else ""
+            view?.findViewById<TextView>(R.id.text_sync_state)?.text = when {
+                cfg.repo.isBlank() || cfg.token.isBlank() -> "未配置，点击设置 GitHub 仓库"
+                cfg.lastSyncTime > 0 ->
+                    "${cfg.repo} · 上次${cfg.lastSyncAction} " +
+                        SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(java.util.Date(cfg.lastSyncTime)) + auto
+                else -> "${cfg.repo} · 尚未同步$auto"
             }
         }
     }
@@ -156,190 +154,101 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    // ---------- 账本管理 ----------
+    // ---------- 账本管理 / 清空账本 ----------
 
-    private fun manageBooks() {
-        lifecycleScope.launch {
-            val books = db.bookDao().getAll()
-            val current = Pref.currentBookId(requireContext())
-            val names = books.map { (if (it.id == current) "✅ " else "　") + it.name }.toTypedArray()
-
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("账本管理（点选切换，长按改名/删除）")
-                .setItems(names) { _, i ->
-                    Pref.setCurrentBookId(requireContext(), books[i].id)
-                    Toast.makeText(requireContext(), "已切换到「${books[i].name}」", Toast.LENGTH_SHORT).show()
-                    updateCurrentBookLabel()
-                }
-                .setPositiveButton("新增账本") { _, _ -> addBook() }
-                .setNeutralButton("关闭", null)
-                .show()
-
-            // 用第二个对话框处理改名/删除（长按在 AlertDialog 里不好拦截，改用输入式管理）
-        }
+    /** 账本管理是独立页面：切换、新增、重命名、删除都在那里 */
+    private fun openBookManage() {
+        com.mine.myjizhang.ui.books.BookManageActivity.start(requireContext())
     }
 
-    private fun addBook() {
-        val input = EditText(requireContext())
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("新增账本")
-            .setView(input)
-            .setPositiveButton("保存") { _, _ ->
-                val name = input.text.toString().trim()
-                if (name.isEmpty()) return@setPositiveButton
-                lifecycleScope.launch {
-                    val count = db.bookDao().count()
-                    db.bookDao().insert(AccountBook(AppDatabase.newId(), name, count, System.currentTimeMillis()))
-                    Toast.makeText(requireContext(), "已新增「$name」", Toast.LENGTH_SHORT).show()
-                    updateCurrentBookLabel()
-                }
+    /** 清空当前账本：保留账本与账户本身，清掉全部流水并把余额归零 */
+    private fun confirmClearBook() {
+        lifecycleScope.launch {
+            val books = db.bookDao().getAll()
+            val currentId = Pref.currentBookId(requireContext())
+            val book = books.firstOrNull { it.id == currentId } ?: books.firstOrNull()
+            if (book == null) {
+                Toast.makeText(requireContext(), "还没有账本", Toast.LENGTH_SHORT).show()
+                return@launch
             }
-            .setNegativeButton("取消", null)
-            .show()
-    }
-
-    private fun renameOrDeleteBook() {
-        lifecycleScope.launch {
-            val books = db.bookDao().getAll()
-            if (books.isEmpty()) return@launch
-            val names = books.map { it.name }.toTypedArray()
+            val billCount = db.billDao().countByBook(book.id)
+            val assetCount = db.assetDao().countByBook(book.id)
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("选择要修改的账本")
-                .setItems(names) { _, i -> editBook(books[i]) }
+                .setTitle("清空账本")
+                .setMessage(
+                    "是否清空当前账本——「${book.name}」？\n\n" +
+                        "将删除该账本下 $billCount 笔账单、$assetCount 个账户的全部记录" +
+                        "（账单 / 对账流水 / 借贷 / 预算），账户余额归零；" +
+                        "账本和账户本身会保留。\n\n此操作无法撤销，建议先导出或同步备份。"
+                )
+                .setPositiveButton("确认清空") { _, _ -> doClearBook(book.id, book.name) }
                 .setNegativeButton("取消", null)
                 .show()
         }
     }
 
-    private fun editBook(book: AccountBook) {
-        val options = arrayOf("重命名", "删除账本（连同账单）")
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(book.name)
-            .setItems(options) { _, i ->
-                when (i) {
-                    0 -> {
-                        val input = EditText(requireContext())
-                        input.setText(book.name)
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("重命名账本")
-                            .setView(input)
-                            .setPositiveButton("保存") { _, _ ->
-                                val name = input.text.toString().trim()
-                                if (name.isNotEmpty()) {
-                                    lifecycleScope.launch {
-                                        book.name = name
-                                        db.bookDao().update(book)
-                                        updateCurrentBookLabel()
-                                    }
-                                }
-                            }
-                            .setNegativeButton("取消", null)
-                            .show()
-                    }
-                    1 -> {
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("删除账本")
-                            .setMessage("将同时删除「${book.name}」下的所有账单，无法恢复。确定吗？")
-                            .setPositiveButton("删除") { _, _ ->
-                                lifecycleScope.launch {
-                                    db.billDao().deleteByBook(book.id)
-                                    db.assetDao().getByBook(book.id).forEach { db.assetDao().delete(it) }
-                                    db.bookDao().delete(book)
-                                    if (Pref.currentBookId(requireContext()) == book.id) {
-                                        Pref.setCurrentBookId(
-                                            requireContext(),
-                                            db.bookDao().getAll().firstOrNull()?.id ?: ""
-                                        )
-                                    }
-                                    updateCurrentBookLabel()
-                                }
-                            }
-                            .setNegativeButton("取消", null)
-                            .show()
-                    }
+    private fun doClearBook(bookId: String, bookName: String) {
+        val (dialog, _, label) = showProgress("正在清空账本")
+        progressDialog = dialog
+        label.text = "正在删除「$bookName」的记录…"
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    db.billDao().deleteByBook(bookId)
+                    db.adjustDao().deleteByBook(bookId)
+                    db.loanDao().deleteByBook(bookId)
+                    db.budgetDao().deleteByBook(bookId)
+                    db.assetDao().resetBalanceByBook(bookId)
                 }
+                dismissProgress()
+                DataBus.bump()
+                updateCurrentBookLabel()
+                Toast.makeText(
+                    requireContext(), "已清空「$bookName」", Toast.LENGTH_LONG
+                ).show()
+            } catch (e: Exception) {
+                dismissProgress()
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("清空失败")
+                    .setMessage(e.message ?: "未知错误")
+                    .setPositiveButton("好的", null)
+                    .show()
             }
-            .setNegativeButton("取消", null)
-            .show()
+        }
     }
 
     // ---------- 账单导出 ----------
 
-    private fun showExportDialog() {
-        val scopeOptions = arrayOf("当前账本", "全部账本")
-        val rangeOptions = arrayOf("全部时间", "本月", "今年")
-        var scopeSel = 0
-        var rangeSel = exportRange
-
-        val container = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(24), dp(16), dp(24), 0)
-            addView(TextView(requireContext()).apply { text = "导出范围" })
-            addView(TextView(requireContext()).apply {
-                id = View.generateViewId()
-                text = scopeOptions[scopeSel]
-                setOnClickListener { _ -> }
-            })
-        }
-        // 简化实现：两次单选对话框
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("选择导出范围")
-            .setSingleChoiceItems(scopeOptions, 0) { _, i -> scopeSel = i }
-            .setPositiveButton("下一步") { _, _ ->
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("选择时间范围")
-                    .setSingleChoiceItems(rangeOptions, rangeSel) { _, i -> rangeSel = i }
-                    .setPositiveButton("导出") { _, _ ->
-                        exportBookId = if (scopeSel == 0) Pref.currentBookId(requireContext()) else null
-                        exportRange = rangeSel
-                        val name = "记账本_" +
-                            (if (scopeSel == 0) "当前账本" else "全部账本") + "_" +
-                            when (rangeSel) {
-                                1 -> SimpleDateFormat("yyyy-MM", Locale.CHINA).format(java.util.Date()) + "_账单.xlsx"
-                                2 -> Calendar.getInstance().get(Calendar.YEAR).toString() + "_账单.xlsx"
-                                else -> "所有时间账单.xlsx"
-                            }
-                        exportLauncher.launch(name)
-                    }
-                    .setNegativeButton("取消", null)
-                    .show()
-            }
-            .setNegativeButton("取消", null)
-            .show()
+    /** 点击即导出：全部账本、全部时间，不再询问范围 */
+    private fun startExport() {
+        val name = "记账本_全部时间_" +
+            SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA).format(java.util.Date()) + ".xlsx"
+        exportLauncher.launch(name)
     }
 
     private fun doExport(uri: Uri) {
         val (dialog, bar, label) = showProgress("正在导出账单")
         progressDialog = dialog
+        bar.isIndeterminate = false
+        bar.progress = 5
+        label.text = "正在收集账单…"
         lifecycleScope.launch {
             try {
                 val sheets = withContext(Dispatchers.IO) {
-                    val startEnd = when (exportRange) {
-                        1 -> {
-                            val cal = Calendar.getInstance()
-                            Pair(
-                                DateTimes.monthStart(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1),
-                                DateTimes.monthEnd(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1)
-                            )
-                        }
-                        2 -> {
-                            val y = Calendar.getInstance().get(Calendar.YEAR)
-                            Pair(DateTimes.monthStart(y, 1), DateTimes.monthEnd(y, 12))
-                        }
-                        else -> null
-                    }
+                    val data = BillExporter.export(db, null, null, null)
                     withContext(Dispatchers.Main) {
-                        label.text = "正在收集账单…"
-                        bar.isIndeterminate = true
-                    }
-                    val data = BillExporter.export(db, exportBookId, startEnd?.first, startEnd?.second)
-                    withContext(Dispatchers.Main) {
-                        label.text = "正在生成 Excel…"
+                        bar.progress = 55
+                        label.text = "正在生成 Excel（${data.size} 个工作表）…"
                     }
                     val bytes = ByteArrayOutputStream().also { XlsxWriter.write(it, data) }.toByteArray()
+                    withContext(Dispatchers.Main) {
+                        bar.progress = 85
+                        label.text = "正在写入文件（${bytes.size / 1024} KB）…"
+                    }
                     requireContext().contentResolver.openOutputStream(uri)?.use {
                         it.write(bytes)
                     }
+                    withContext(Dispatchers.Main) { bar.progress = 100 }
                     data
                 }
                 dismissProgress()
@@ -378,6 +287,9 @@ class SettingsFragment : Fragment() {
                     }
                 }
                 dismissProgress()
+                // 导入会新建账本 / 账户，账单页必须重新查库（hide 的 Fragment 不会自己刷新）
+                DataBus.bump()
+                updateCurrentBookLabel()
                 val msg = StringBuilder("导入 ${result.bills} 笔账单")
                 if (result.skipped > 0) msg.append("，跳过 ${result.skipped} 条无效行")
                 if (result.newBooks.isNotEmpty()) msg.append("\n新增账本：${result.newBooks.joinToString("、")}")
@@ -402,75 +314,216 @@ class SettingsFragment : Fragment() {
 
     // ---------- GitHub 同步 ----------
 
+    /** 自动同步可选间隔：文案与天数一一对应 */
+    private val autoLabels = arrayOf("关闭", "每天", "每星期", "每月")
+    private val autoDays = intArrayOf(0, 1, 7, 30)
+
+    private fun autoDesc(days: Int): String = when (days) {
+        1 -> "每天自动上传一次"
+        7 -> "每星期自动上传一次"
+        30 -> "每月自动上传一次"
+        else -> "关闭（只能手动点「同步」）"
+    }
+
+    /** 弹系统电池优化白名单，华为/EMUI 上能明显提高后台任务存活率 */
+    private fun requestBackgroundPermission() {
+        val ctx = requireContext()
+        try {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${ctx.packageName}")
+            })
+        } catch (e: Exception) {
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:${ctx.packageName}")
+                    }
+                )
+                Toast.makeText(ctx, "请到「耗电管理」里允许后台运行", Toast.LENGTH_LONG).show()
+            } catch (e2: Exception) {
+                Toast.makeText(ctx, "请到系统设置的电池管理中允许本应用后台运行", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun showSyncDialog() {
-        val cfg = Pref.syncConfig(requireContext())
+        val ctx = requireContext()
+        var cfg = Pref.syncConfig(ctx)
         val view = layoutInflater.inflate(R.layout.dialog_sync, null)
+
+        val sectionConfig = view.findViewById<View>(R.id.section_config)
+        val sectionReady = view.findViewById<View>(R.id.section_ready)
         val inputRepo = view.findViewById<EditText>(R.id.input_repo)
         val inputBranch = view.findViewById<EditText>(R.id.input_branch)
         val inputToken = view.findViewById<EditText>(R.id.input_token)
         val inputPassword = view.findViewById<EditText>(R.id.input_password)
         val switchEncrypt = view.findViewById<MaterialSwitch>(R.id.switch_encrypt)
-        val textHint = view.findViewById<TextView>(R.id.text_sync_hint)
+        val textConfigHint = view.findViewById<TextView>(R.id.text_config_hint)
+        val textRepo = view.findViewById<TextView>(R.id.text_repo)
+        val textRepoMeta = view.findViewById<TextView>(R.id.text_repo_meta)
+        val textLastSync = view.findViewById<TextView>(R.id.text_last_sync)
 
+        val textAutoValue = view.findViewById<TextView>(R.id.text_auto_config_value)
+        val textAutoHint = view.findViewById<TextView>(R.id.text_auto_hint)
+        val btnBattery = view.findViewById<View>(R.id.btn_battery)
+        val textAutoReady = view.findViewById<TextView>(R.id.text_auto_ready)
+        val textAutoReadyState = view.findViewById<TextView>(R.id.text_auto_ready_state)
+        val btnBatteryReady = view.findViewById<View>(R.id.btn_battery_ready)
+
+        // 用已保存的配置填充表单
         inputRepo.setText(cfg.repo)
         inputBranch.setText(cfg.branch.ifBlank { "main" })
         inputToken.setText(cfg.token)
-        switchEncrypt.isChecked = cfg.password.isNotBlank()
-        inputPassword.visibility = if (cfg.password.isNotBlank()) View.VISIBLE else View.GONE
         inputPassword.setText(cfg.password)
+        switchEncrypt.isChecked = cfg.password.isNotBlank()
+        inputPassword.visibility = if (switchEncrypt.isChecked) View.VISIBLE else View.GONE
         switchEncrypt.setOnCheckedChangeListener { _, checked ->
             inputPassword.visibility = if (checked) View.VISIBLE else View.GONE
         }
-        if (cfg.lastSyncTime > 0) {
-            textHint.text = "上次${cfg.lastSyncAction}：" +
-                SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA).format(java.util.Date(cfg.lastSyncTime))
+
+        fun readForm(): SyncConfig = cfg.copy(
+            repo = inputRepo.text.toString().trim()
+                .removePrefix("https://github.com/").removeSuffix(".git").trimEnd('/'),
+            branch = inputBranch.text.toString().trim().ifBlank { "main" },
+            token = inputToken.text.toString().trim(),
+            password = if (switchEncrypt.isChecked) inputPassword.text.toString() else ""
+        )
+
+        fun isReady(c: SyncConfig) = c.repo.isNotBlank() && c.token.isNotBlank()
+
+        val fmtTime = { t: Long ->
+            SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(java.util.Date(t))
         }
 
-        fun collect(): SyncConfig {
-            val c = cfg.copy(
-                repo = inputRepo.text.toString().trim().removePrefix("https://github.com/").trimEnd('/'),
-                branch = inputBranch.text.toString().trim().ifBlank { "main" },
-                token = inputToken.text.toString().trim(),
-                password = if (switchEncrypt.isChecked) inputPassword.text.toString() else ""
-            )
-            Pref.saveSyncConfig(requireContext(), c)
-            return c
+        fun render(c: SyncConfig) {
+            val ready = isReady(c)
+            sectionConfig.visibility = if (ready) View.GONE else View.VISIBLE
+            sectionReady.visibility = if (ready) View.VISIBLE else View.GONE
+
+            // 自动同步：配置区
+            val on = c.autoSyncDays > 0
+            textAutoValue.text = autoDesc(c.autoSyncDays)
+            textAutoHint.visibility = if (on) View.VISIBLE else View.GONE
+            textAutoHint.text = "间隔已保存后，由系统在后台择机上传；省电策略可能让实际时间有几个小时偏差，长期不用 App 时建议点下面按钮放开后台限制。"
+            btnBattery.visibility = if (on) View.VISIBLE else View.GONE
+
+            if (!ready) return
+
+            textRepo.text = c.repo
+            textRepoMeta.text = "分支 ${c.branch.ifBlank { "main" }} · " +
+                if (c.password.isNotBlank()) "已加密" else "未加密"
+            textLastSync.text = if (c.lastSyncTime > 0) {
+                "上次${c.lastSyncAction}：${fmtTime(c.lastSyncTime)}"
+            } else {
+                "还没有同步过，点「同步」把本地账本推送到仓库"
+            }
+
+            // 自动同步：已配置区
+            textAutoReady.text = "自动同步：" + Pref.autoSyncLabel(c.autoSyncDays)
+            val autoTime = Pref.autoSyncLastTime(ctx)
+            val autoMsg = Pref.autoSyncLastMsg(ctx)
+            textAutoReadyState.text = when {
+                !on -> "点这里开启定时备份"
+                autoTime <= 0L -> "已开启，等待系统首次后台执行"
+                autoMsg.startsWith("失败") -> "上次自动同步失败（${fmtTime(autoTime)}）：${autoMsg.removePrefix("失败：")}"
+                else -> "上次自动同步：${fmtTime(autoTime)}"
+            }
+            btnBatteryReady.visibility = if (on) View.VISIBLE else View.GONE
         }
 
-        val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle("同步到 GitHub 仓库")
+        /** 选间隔：配置区只改内存，已配置区立刻落盘并重建任务 */
+        fun chooseInterval(persistNow: Boolean) {
+            val sel = autoDays.indexOf(cfg.autoSyncDays).coerceAtLeast(0)
+            MaterialAlertDialogBuilder(ctx)
+                .setTitle("自动同步间隔")
+                .setSingleChoiceItems(autoLabels, sel) { d, which ->
+                    cfg = cfg.copy(autoSyncDays = autoDays[which])
+                    if (persistNow) {
+                        Pref.saveSyncConfig(ctx, cfg)
+                        SyncScheduler.apply(ctx, replace = true)
+                        updateSyncLabel()
+                    }
+                    render(cfg)
+                    d.dismiss()
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
+
+        val dialog = MaterialAlertDialogBuilder(ctx)
+            .setTitle("GitHub 同步")
             .setView(view)
             .setPositiveButton("关闭", null)
             .create()
 
+        view.findViewById<View>(R.id.row_auto_config).setOnClickListener { chooseInterval(false) }
+        view.findViewById<View>(R.id.row_auto_ready).setOnClickListener { chooseInterval(true) }
+        btnBattery.setOnClickListener { requestBackgroundPermission() }
+        btnBatteryReady.setOnClickListener { requestBackgroundPermission() }
+
+        // 保存配置
+        view.findViewById<View>(R.id.btn_save).setOnClickListener {
+            val c = readForm()
+            if (c.repo.isBlank()) {
+                textConfigHint.text = "✗ 请填写仓库（格式 owner/repo）"
+                return@setOnClickListener
+            }
+            if (c.token.isBlank()) {
+                textConfigHint.text = "✗ 请填写 Personal Access Token"
+                return@setOnClickListener
+            }
+            Pref.saveSyncConfig(ctx, c)
+            cfg = c
+            SyncScheduler.apply(ctx, replace = true)
+            textConfigHint.text = ""
+            render(c)
+            updateSyncLabel()
+            Toast.makeText(
+                ctx,
+                if (c.autoSyncDays > 0) "配置已保存，" + Pref.autoSyncLabel(c.autoSyncDays) + "自动同步" else "配置已保存",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // 测试连接
         view.findViewById<View>(R.id.btn_test).setOnClickListener {
-            val c = collect()
+            val c = readForm()
             lifecycleScope.launch {
-                textHint.text = "测试中…"
+                textConfigHint.text = "测试中…"
                 when (val r = GitHubSyncer.testConnection(c)) {
-                    is SyncResult.Success -> textHint.text = r.message
-                    is SyncResult.Failure -> textHint.text = "✗ " + r.message
+                    is SyncResult.Success -> textConfigHint.text = "✓ " + r.message
+                    is SyncResult.Failure -> textConfigHint.text = "✗ " + r.message
                 }
             }
         }
-        view.findViewById<View>(R.id.btn_upload).setOnClickListener {
-            val c = collect()
-            val (dialog, bar, label) = showProgress("正在上传备份")
-            progressDialog = dialog
+
+        // 已配置状态下，点击「同步」直接上传
+        view.findViewById<View>(R.id.btn_sync).setOnClickListener {
+            val c = readForm().let {
+                Pref.saveSyncConfig(ctx, it)
+                it
+            }
+            cfg = c
+            SyncScheduler.apply(ctx, replace = true)
+            val (progress, _, _) = showProgress("正在同步到 GitHub")
+            progressDialog = progress
             lifecycleScope.launch {
                 when (val r = GitHubSyncer.upload(c, db)) {
                     is SyncResult.Success -> {
-                        c.lastSyncTime = System.currentTimeMillis()
-                        c.lastSyncAction = "上传"
-                        Pref.saveSyncConfig(requireContext(), c)
+                        cfg = Pref.syncConfig(ctx).copy(
+                            lastSyncTime = System.currentTimeMillis(),
+                            lastSyncAction = "同步"
+                        )
+                        Pref.saveSyncConfig(ctx, cfg)
                         dismissProgress()
-                        Toast.makeText(requireContext(), "✓ " + r.message, Toast.LENGTH_LONG).show()
+                        render(cfg)
                         updateSyncLabel()
+                        Toast.makeText(ctx, "✓ " + r.message, Toast.LENGTH_LONG).show()
                     }
                     is SyncResult.Failure -> {
                         dismissProgress()
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("上传失败")
+                        MaterialAlertDialogBuilder(ctx)
+                            .setTitle("同步失败")
                             .setMessage(r.message)
                             .setPositiveButton("好的", null)
                             .show()
@@ -478,28 +531,34 @@ class SettingsFragment : Fragment() {
                 }
             }
         }
+
+        // 从仓库恢复
         view.findViewById<View>(R.id.btn_restore).setOnClickListener {
-            val c = collect()
-            MaterialAlertDialogBuilder(requireContext())
+            val c = readForm()
+            MaterialAlertDialogBuilder(ctx)
                 .setTitle("恢复备份")
                 .setMessage("将用仓库里的备份覆盖本地全部数据（账本/分类/账户/账单）。确定继续吗？")
                 .setPositiveButton("恢复") { _, _ ->
-                    val (dialog, bar, label) = showProgress("正在恢复备份")
-                    progressDialog = dialog
+                    val (progress, _, _) = showProgress("正在恢复备份")
+                    progressDialog = progress
                     lifecycleScope.launch {
                         when (val r = GitHubSyncer.downloadAndRestore(c, db)) {
                             is SyncResult.Success -> {
-                                c.lastSyncTime = System.currentTimeMillis()
-                                c.lastSyncAction = "恢复"
-                                Pref.saveSyncConfig(requireContext(), c)
+                                cfg = Pref.syncConfig(ctx).copy(
+                                    lastSyncTime = System.currentTimeMillis(),
+                                    lastSyncAction = "恢复"
+                                )
+                                Pref.saveSyncConfig(ctx, cfg)
                                 dismissProgress()
-                                Toast.makeText(requireContext(), "✓ " + r.message, Toast.LENGTH_LONG).show()
+                                DataBus.bump()
+                                render(cfg)
                                 updateCurrentBookLabel()
                                 updateSyncLabel()
+                                Toast.makeText(ctx, "✓ " + r.message, Toast.LENGTH_LONG).show()
                             }
                             is SyncResult.Failure -> {
                                 dismissProgress()
-                                MaterialAlertDialogBuilder(requireContext())
+                                MaterialAlertDialogBuilder(ctx)
                                     .setTitle("恢复失败")
                                     .setMessage(r.message)
                                     .setPositiveButton("好的", null)
@@ -512,48 +571,23 @@ class SettingsFragment : Fragment() {
                 .show()
         }
 
+        // 修改配置 → 回到表单
+        view.findViewById<View>(R.id.btn_edit_config).setOnClickListener {
+            inputRepo.setText(cfg.repo)
+            inputBranch.setText(cfg.branch.ifBlank { "main" })
+            inputToken.setText(cfg.token)
+            inputPassword.setText(cfg.password)
+            switchEncrypt.isChecked = cfg.password.isNotBlank()
+            inputPassword.visibility = if (switchEncrypt.isChecked) View.VISIBLE else View.GONE
+            sectionReady.visibility = View.GONE
+            sectionConfig.visibility = View.VISIBLE
+        }
+
+        render(cfg)
         dialog.show()
     }
 
     // ---------- 关于 ----------
-
-    private fun showAdjustLog() {
-        lifecycleScope.launch {
-            val bookId = Pref.currentBookId(requireContext())
-            val list = if (bookId.isNotBlank()) db.adjustDao().getByBook(bookId) else db.adjustDao().getAll()
-            if (list.isEmpty()) {
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("对账记录")
-                    .setMessage(
-                        "还没有对账记录。\n\n" +
-                            "以下操作会自动留下对账流水：\n" +
-                            "· 修改账户余额 / 账户信息\n" +
-                            "· 删除或修改账单\n" +
-                            "· 借入借出标记已还\n\n" +
-                            "导出 xlsx 时会一并导出「账户」「对账」两个 sheet，再导入就能精确还原余额。"
-                    )
-                    .setPositiveButton("知道了", null)
-                    .show()
-                return@launch
-            }
-            val fmt = SimpleDateFormat("MM-dd HH:mm", Locale.CHINA)
-            val text = list.take(300).joinToString("\n") { a ->
-                val amt = when {
-                    Math.abs(a.amount) < 0.005 -> "备忘"
-                    a.amount > 0 -> "+" + Money.fmt(a.amount)
-                    else -> "-" + Money.fmt(Math.abs(a.amount))
-                }
-                val tail = if (a.note.isNotBlank()) "  ${a.note}" else ""
-                "${fmt.format(java.util.Date(a.time))}  ${a.assetName}  $amt  ${com.mine.myjizhang.data.entity.Adjust.kindName(a.kind)}$tail"
-            }
-            val shown = if (list.size > 300) "\n\n（仅显示最近 300 条，共 ${list.size} 条）" else ""
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("对账记录（${list.size} 条）")
-                .setMessage(text + shown)
-                .setPositiveButton("关闭", null)
-                .show()
-        }
-    }
 
     private fun showAbout() {
         val ver = try {
@@ -567,7 +601,7 @@ class SettingsFragment : Fragment() {
             .setMessage(
                 "记账本 v$ver\n\n" +
                     "本地记账应用，数据存储在设备本地，无注册登录。\n\n" +
-                    "· 支持导入/导出一飞记账格式的 xlsx 账单\n" +
+                    "· 支持导入 / 导出 xlsx 账单（含账户与对账流水，可精确还原余额）\n" +
                     "· 支持通过 GitHub 私有仓库加密备份与恢复\n\n" +
                     "提示：删除 App 或清除数据会丢失所有记录，请定期使用「同步」或「账单导出」备份。"
             )

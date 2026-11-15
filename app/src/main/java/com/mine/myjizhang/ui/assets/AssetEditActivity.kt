@@ -1,6 +1,5 @@
 package com.mine.myjizhang.ui.assets
 
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -8,11 +7,13 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.NumberPicker
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.mine.myjizhang.R
 import com.mine.myjizhang.data.AppDatabase
@@ -78,6 +79,8 @@ class AssetEditActivity : AppCompatActivity() {
         }
     }
 
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
     private fun dayLabel(day: Int): String = if (day in 1..31) "每月${day}号" else "选填"
 
     private fun applyCreditUI() {
@@ -85,25 +88,43 @@ class AssetEditActivity : AppCompatActivity() {
             if (isCreditAccount) View.VISIBLE else View.GONE
         findViewById<View>(R.id.card_dates).visibility =
             if (isCreditAccount) View.VISIBLE else View.GONE
+        // 信贷账户的欠款永远从净资产里扣，这个开关对它没有意义
+        findViewById<View>(R.id.card_in_total).visibility =
+            if (isCreditAccount) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.label_amount).text =
             if (isCreditAccount) "当前欠款（欠款正数，存款负数）" else "当前余额"
     }
 
-    /** 1-31 号选择 */
+    /**
+     * 1-31 号选择。
+     * 之前是「滚一下就写回并关闭弹窗」，想滑到后面的数字根本滑不过去；
+     * 现在改成滚轮 + 确定/取消，随便滑多少次，点「确定」才写回。
+     */
     private fun pickDay(target: TextView) {
-        val dialog = Dialog(this)
-        dialog.setTitle("选择几号")
-        val picker = NumberPicker(this)
-        picker.minValue = 1
-        picker.maxValue = 31
-        val cur = target.text.toString()
-        picker.value = Regex("每月(\\d+)号").find(cur)?.groupValues?.get(1)?.toIntOrNull() ?: 1
-        dialog.setContentView(picker)
-        picker.setOnValueChangedListener { _, _, newVal ->
-            target.text = "每月${newVal}号"
-            dialog.dismiss()
+        val cur = Regex("每月(\\d+)号").find(target.text.toString())
+            ?.groupValues?.get(1)?.toIntOrNull() ?: 1
+
+        val picker = NumberPicker(this).apply {
+            minValue = 1
+            maxValue = 31
+            value = cur
+            wrapSelectorWheel = true
+            descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
         }
-        dialog.show()
+        val container = FrameLayout(this).apply {
+            setPadding(dp(28), dp(8), dp(28), 0)
+            addView(picker)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("选择每月几号")
+            .setView(container)
+            .setPositiveButton("确定") { _, _ ->
+                val day = picker.value
+                target.text = "每月${day}号"
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     override fun onSupportNavigateUp(): Boolean {

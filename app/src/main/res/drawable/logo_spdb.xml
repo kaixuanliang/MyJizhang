@@ -1,7 +1,0 @@
-<!-- 上海浦东发展银行：蓝底白色「S」标 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="42dp" android:height="42dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#00549F" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M68,40 C68,29 40,30 40,44 C40,58 68,53 68,66 C68,80 40,79 40,68" />
-</vector>

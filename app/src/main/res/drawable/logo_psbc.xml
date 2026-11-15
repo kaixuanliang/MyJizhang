@@ -1,8 +1,0 @@
-<!-- 中国邮政储蓄银行：绿底白色信封标 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="42dp" android:height="42dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#007A3D" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M30,42 H78 V74 H30 Z" />
-    <path android:strokeColor="#007A3D" android:strokeWidth="5" android:pathData="M30,42 L54,62 L78,42" />
-</vector>

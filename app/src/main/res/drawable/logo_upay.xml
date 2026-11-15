@@ -1,9 +1,0 @@
-<!-- 云闪付：红底白色「云」字标 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="42dp" android:height="42dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#D7000F" android:pathData="M54,0a54,54 0 1,0 0,108a54,54 0 1,0 0,-108z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M36,38 H74" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M30,52 H80" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M70,62 C68,74 58,80 44,80" />
-</vector>
