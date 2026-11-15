@@ -4,12 +4,20 @@
 
 > 这个项目起因于一飞记账停止运营：手里有一份导出的 xlsx，但找不到能把它完整接过来的工具。于是先做了「能导入」，再逐步把记账、资产、借款、预算、报表补齐。
 
+## 下载
+
+最新安装包在 [Releases](https://github.com/kaixuanliang/MyJizhang/releases/latest)，下载 `myjizhang-vX.Y.Z.apk` 直接安装即可。
+
+- 当前版本：**1.7.6**（versionCode 23）· 5.9 MB · Android 8.0+（minSdk 26）
+- 签名固定不变，装过旧版可直接覆盖升级，账目数据保留
+- 也能从[下载页](https://wbapp-hvizee75pesvuluyqsmses.app.workbuddy.host/?sharecode=VD5RW46V6G)拿包
+
 ## 功能
 
 **账单**
 - 按月切换，当月收入 / 支出 / 结余概览，流水按日分组
 - 支出、收入、转账三类记账，支持退款、报销、手续费
-- 左滑删除，可撤销，余额同步回滚
+- 左滑删除，弹窗二次确认，确认后余额同步回滚
 - 两级分类（大类 + 小类），大类不污染记账网格
 
 **日历**
@@ -82,7 +90,7 @@
 
 ## 技术栈
 
-- Kotlin + Room（SQLite），数据库版本 6，迁移链 `1→2→3→4→5→6`
+- Kotlin + Room（SQLite），数据库版本 7，迁移链 `1→2→3→4→5→6→7`
 - 单 Activity + 5 个 Fragment，ViewBinding，Material 3
 - 协程 + Flow 驱动 UI，DAO 直接暴露 `Flow`
 - xlsx 读写为自研实现（`java.util.zip` + `XmlPullParser`），未引入 Apache POI，APK < 6 MB
